@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donatello Wrestling Mayhem - Selettore Personaggi 16-bit</title>
+    <!-- Caricamento di Tailwind CSS per uno stile moderno e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Stile di base per il body e il font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Nero profondo per sfondo arena */
+        }
+        /* Look PIXELED WRESTLING ARENA (Bordo stile Cintura di Campione) */
+        .arcade-border {
+            border: 6px solid #FFC72C; /* Giallo Oro (Titolo) */
+            box-shadow: 0 0 0 4px #E4002B, 0 0 20px rgba(228, 0, 43, 0.7); /* Rosso WWE */
+            background: #1f2937; /* Grigio scuro/bluastro */
+        }
+        /* Stile per i box di selezione del personaggio */
+        .selection-box {
+            min-height: 250px;
+            background-color: #111827; /* Nero profondo */
+            border: 3px solid #6b7280; /* Bordo grigio */
+            border-radius: 0.5rem; /* angoli arrotondati */
+            box-shadow: 0 4px #4b5563; /* Effetto 3D leggero */
+        }
+        /* Stile per i pulsanti di selezione (piccole immagini in basso) */
+        .character-thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            transition: transform 0.1s;
+            border: 3px solid transparent;
+            cursor: pointer;
+            image-rendering: pixelated;
+        }
+        .character-thumbnail:hover {
+            transform: scale(1.1);
+            border-color: #FFC72C; /* Effetto hover Oro */
+        }
+        .selected-p1 {
+            border-color: #3b82f6 !important; /* Blu elettrico per P1 */
+            box-shadow: 0 0 10px #3b82f6;
+            transform: scale(1.15);
+        }
+        .selected-p2 {
+            border-color: #ef4444 !important; /* Rosso vivo per P2 */
+            box-shadow: 0 0 10px #ef4444;
+            transform: scale(1.15);
+        }
+        /* Stile per l'immagine grande del personaggio */
+        .character-portrait {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        /* Pulsante di combattimento (stile titolo dell'evento) */
+        #fightButton {
+            background-color: #E4002B; /* Rosso WWE */
+            border: 3px solid #FFC72C; /* Bordo Oro */
+            text-shadow: 1px 1px 0 #111827, 2px 2px 0 #111827;
+            font-size: 1.5rem;
+            padding-left: 2.5rem;
+            padding-right: 2.5rem;
+        }
+        #fightButton:hover:not(:disabled) {
+            background-color: #cc0025; /* Rosso più scuro */
+            transform: translateY(-3px);
+            box-shadow: 0 8px #FFC72C, 0 0 15px rgba(255, 199, 44, 0.8);
+        }
+        #fightButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: 0 4px #FFC72C;
+        }
+
+        /* Stile per la modal del risultato */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+        }
+        .modal-content {
+            animation: bounceIn 0.5s ease-out;
+            border: 8px solid #E4002B; /* Bordo Rosso Vittoria */
+            background-color: #111827;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        /* Look pixel art per il testo principale */
+        .pixel-text {
+            font-family: monospace;
+            text-shadow: 3px 3px #000; /* Ombra più marcata */
+        }
+
+        /* Titolo Principale in Giallo WWE */
+        h1.pixel-text {
+            color: #FFC72C; 
+            text-shadow: 4px 4px #E4002B; /* Oro su Rosso */
+        }
+
+        /* P1/P2 Pannello Headings */
+        .selection-box h3 {
+             text-shadow: 2px 2px #111827;
+        }
+
+        /* Stile per i pulsanti P1/P2 in evidenza */
+        .player-selector-active {
+            box-shadow: 0 0 15px #FFC72C;
+            border-color: #FFC72C !important;
+            transform: scale(1.05);
+        }
+        
+        /* Assicura che le stelle appaiano bene */
+        .star-rating {
+            font-size: 1.4rem; /* Stelle leggermente più grandi */
+            letter-spacing: 0.1em;
+            color: #FFC72C; /* Stelle Giallo Oro */
+            width: auto; 
+            text-align: right;
+        }
+
+        /* Ajustments per P1 e P2 (solo stelle) */
+        #p1-stats .flex { justify-content: space-between; }
+        #p2-stats .flex { justify-content: space-between; }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
+
+    <div class="arcade-border w-full max-w-6xl p-6 rounded-lg">
+        <h1 class="text-4xl sm:text-5xl font-bold text-center mb-6 pixel-text">DONATELLO WRESTLING MAYHEM </h1>
+        <h2 class="text-xl text-gray-200 text-center mb-4">Seleziona i tuoi Campioni</h2>
+
+        <!-- SEZIONE DI SELEZIONE E STATISTICHE -->
+        <div class="flex flex-col lg:flex-row justify-between gap-6 mb-4">
+
+            <!-- Player 1 Panel -->
+            <div id="p1-panel" class="lg:w-1/2 p-4 selection-box border-blue-600 border-4">
+                <div class="flex items-center mb-4 justify-between">
+                    <h3 class="text-2xl text-blue-400 font-bold pixel-text">PLAYER 1</h3>
+                    <button id="p1-select-btn" onclick="setSelectionTarget(1)"
+                            class="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-blue-400">
+                        P1
+                    </button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <!-- Immagine grande P1 -->
+                    <div class="w-full sm:w-1/2 h-48 sm:h-64 bg-gray-900 rounded-md overflow-hidden flex items-center justify-center">
+                        <img id="p1-portrait" class="character-portrait" src="https://placehold.co/256x256/1a202c/ffffff?text=P1" alt="Ritratto Player 1">
+                    </div>
+                    <!-- Statistiche P1 -->
+                    <div id="p1-stats" class="w-full sm:w-1/2 text-white">
+                        <p class="text-xl font-bold mb-2 text-red-400" id="p1-name">NOME: ?</p>
+                        <div class="space-y-2 text-sm">
+                            <!-- Forza (Solo Stelle) -->
+                            <div class="flex items-center">
+                                <span class="w-24 text-red-300">FORZA:</span>
+                                <div id="p1-strength-stars" class="text-left font-bold pixel-text star-rating"></div>
+                            </div>
+                            <!-- Velocità (Solo Stelle) -->
+                            <div class="flex items-center">
+                                <span class="w-24 text-green-300">VELOCITÀ:</span>
+                                <div id="p1-speed-stars" class="text-left font-bold pixel-text star-rating"></div>
+                            </div>
+                            <!-- Resistenza (Solo Stelle) -->
+                            <div class="flex items-center">
+                                <span class="w-24 text-blue-300">RESISTENZA:</span>
+                                <div id="p1-stamina-stars" class="text-left font-bold pixel-text star-rating"></div>
+                            </div>
+                            <!-- Carisma (Solo Stelle) -->
+                            <div class="flex items-center">
+                                <span class="w-24 text-yellow-300">CARISMA:</span>
+                                <div id="p1-charisma-stars" class="text-left font-bold pixel-text star-rating"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player 2 Panel -->
+            <div id="p2-panel" class="lg:w-1/2 p-4 selection-box border-red-600 border-4">
+                <div class="flex items-center mb-4 justify-between">
+                    <button id="p2-select-btn" onclick="setSelectionTarget(2)"
+                            class="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-red-400">
+                        P2
+                    </button>
+                    <h3 class="text-2xl text-red-400 font-bold pixel-text">PLAYER 2</h3>
+                </div>
+                <div class="flex flex-col sm:flex-row-reverse gap-4">
+                    <!-- Immagine grande P2 -->
+                    <div class="w-full sm:w-1/2 h-48 sm:h-64 bg-gray-900 rounded-md overflow-hidden flex items-center justify-center">
+                        <img id="p2-portrait" class="character-portrait" src="https://placehold.co/256x256/1a202c/ffffff?text=P2" alt="Ritratto Player 2">
+                    </div>
+                    <!-- Statistiche P2 -->
+                    <div id="p2-stats" class="w-full sm:w-1/2 text-white text-right">
+                        <p class="text-xl font-bold mb-2 text-blue-400" id="p2-name">NOME: ?</p>
+                        <div class="space-y-2 text-sm">
+                            <!-- Forza (Solo Stelle) -->
+                            <div class="flex items-center justify-end">
+                                <div id="p2-strength-stars" class="text-right font-bold pixel-text star-rating"></div>
+                                <span class="w-24 text-red-300">FORZA:</span>
+                            </div>
+                            <!-- Velocità (Solo Stelle) -->
+                            <div class="flex items-center justify-end">
+                                <div id="p2-speed-stars" class="text-right font-bold pixel-text star-rating"></div>
+                                <span class="w-24 text-green-300">VELOCITÀ:</span>
+                            </div>
+                            <!-- Resistenza (Solo Stelle) -->
+                            <div class="flex items-center justify-end">
+                                <div id="p2-stamina-stars" class="text-right font-bold pixel-text star-rating"></div>
+                                <span class="w-24 text-blue-300">RESISTENZA:</span>
+                            </div>
+                            <!-- Carisma (Solo Stelle) -->
+                            <div class="flex items-center justify-end">
+                                <div id="p2-charisma-stars" class="text-right font-bold pixel-text star-rating"></div>
+                                <span class="w-24 text-yellow-300">CARISMA:</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <!-- Controlli Centrali (Status, Toggle, Fight) -->
+        <div class="text-center mb-8 flex flex-col items-center">
+            <p id="selection-status" class="text-xl font-bold mb-4 text-yellow-300 pixel-text">
+                SELEZIONE ATTIVA: PLAYER 1
+            </p>
+            
+            <!-- Nuovo Pulsante Toggle -->
+            <button id="toggle-target-btn" onclick="toggleSelectionTarget()"
+                    class="px-6 py-2 mb-6 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition duration-150 uppercase border-2 border-green-400 text-sm shadow-md">
+                CAMBIA LOTTATORE (P1 ↔ P2)
+            </button>
+
+            <!-- PULSANTE COMBATTI -->
+            <button id="fightButton" disabled
+                    class="px-8 py-3 font-bold text-white rounded-full transition duration-150 uppercase shadow-lg disabled:opacity-60">
+                SELEZIONA ENTRAMBI I LOTTATORI
+            </button>
+        </div>
+
+
+        <!-- SELEZIONE PERSONAGGI (Thumbnail Grid) -->
+        <h3 class="text-2xl text-yellow-300 text-center mb-4 font-bold pixel-text">ROSTER</h3>
+        <div id="roster-grid" class="flex flex-wrap justify-center gap-4 p-4 arcade-border rounded-lg">
+            <!-- Le miniature dei personaggi saranno iniettate qui dal JS -->
+        </div>
+
+    </div>
+
+    <!-- MODAL RISULTATO INCONTRO -->
+    <div id="result-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
+        <div class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
+            <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
+            <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
+                <!-- Riepilogo dell'incontro -->
+            </div>
+            <p id="winner-announcement" class="text-3xl font-bold mb-8 text-green-400 uppercase pixel-text">
+                <!-- Annuncio del vincitore -->
+            </p>
+            <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-150">
+                Torna al Selettore
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // Array di oggetti per i personaggi del roster
+        const roster = [
+            {
+                name: "FLAVIO",
+                small_img_url: "https://i.imgur.com/VyMOzzC.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-04-523_256.gif",
+                stats: { strength: 4, speed: 3, stamina: 1, charisma: 3 }
+            },
+            {
+                name: "TASSO",
+                small_img_url: "https://i.imgur.com/71J3O46.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-04-361_256.gif",
+                stats: { strength: 3, speed: 5, stamina: 4, charisma: 1 }
+            },
+            {
+                name: "CASTEL",
+                small_img_url: "https://i.imgur.com/TYtB1qL.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-03-422_256.gif",
+                stats: { strength: 2, speed: 4, stamina: 3, charisma: 3 }
+            },
+            {
+                name: "STEFANO",
+                small_img_url: "https://i.imgur.com/zBibAKl.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-02-867_256.gif",
+                stats: { strength: 3, speed: 5, stamina: 5, charisma: 4 }
+            },
+            {
+                name: "FOSCHI",
+                small_img_url: "https://i.imgur.com/7Zfe0Bp.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-02-656_256.gif",
+                stats: { strength: 2, speed: 2, stamina: 3, charisma: 4 }
+            },
+            {
+                name: "PAOLO",
+                small_img_url: "https://i.imgur.com/UZK6Ghd.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-01-64_256.gif",
+                stats: { strength: 3, speed: 3, stamina: 3, charisma: 3 }
+            },
+            {
+                name: "ZAMPA",
+                small_img_url: "https://i.imgur.com/pwOXi1q.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-00-781_256.gif",
+                stats: { strength: 3, speed: 3, stamina: 5, charisma: 5 }
+            },
+            // NUOVI PERSONAGGI AGGIUNTI
+            {
+                name: "TOMMY",
+                small_img_url: "https://i.imgur.com/KgK4Pua.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-00-87_256.gif",
+                stats: { strength: 3, speed: 5, stamina: 5, charisma: 0 }
+            },
+            {
+                name: "ASCIONE",
+                small_img_url: "https://i.imgur.com/RQbSmT0.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/48/15-48-59-874_256.gif",
+                stats: { strength: 5, speed: 1, stamina: 2, charisma: 5 }
+            },
+            {
+                name: "CIANI",
+                small_img_url: "https://i.imgur.com/oH1H7AA.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/48/15-48-58-488_256.gif",
+                stats: { strength: 4, speed: 3, stamina: 4, charisma: 3 }
+            },
+            {
+                name: "ANGELO",
+                small_img_url: "https://i.imgur.com/Pfx4ycR.jpeg",
+                large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/48/15-48-55-570_256.gif",
+                stats: { strength: 4, speed: 2, stamina: 2, charisma: 4 }
+            }
+        ];
+
+        // Stato dell'applicazione
+        let player1 = null; // Memorizza l'oggetto personaggio selezionato per P1
+        let player2 = null; // Memorizza l'oggetto personaggio selezionato per P2
+        let currentSelectionTarget = 1; // 1 per P1, 2 per P2
+
+        // Punteggio massimo per le statistiche (utile per la visualizzazione delle barre)
+        const MAX_STAT = 5;
+
+        // Funzione helper per generare la stringa HTML delle stelle
+        function getStarRatingHtml(value, max) {
+            const filledStar = '★'; // Stella piena (Unicode)
+            const emptyStar = '☆'; // Stella vuota (Unicode)
+            let html = '';
+            for (let i = 1; i <= max; i++) {
+                // Aggiunge una stella piena se il valore è raggiunto o superato, altrimenti una stella vuota
+                html += (i <= value) ? filledStar : emptyStar;
+            }
+            return html;
+        }
+        
+        // NUOVA FUNZIONE: Alterna il target di selezione
+        function toggleSelectionTarget() {
+            // Seleziona il giocatore opposto
+            currentSelectionTarget = currentSelectionTarget === 1 ? 2 : 1;
+            updatePlayerSelectorDisplay();
+        }
+
+        // Funzione per impostare il Player attualmente selezionato
+        function setSelectionTarget(playerNum) {
+            currentSelectionTarget = playerNum;
+            updatePlayerSelectorDisplay();
+        }
+
+        // Funzione per aggiornare l'indicatore di selezione P1/P2
+        function updatePlayerSelectorDisplay() {
+            const p1Btn = document.getElementById('p1-select-btn');
+            const p2Btn = document.getElementById('p2-select-btn');
+            const statusText = document.getElementById('selection-status');
+
+            // Rimuovi la classe attiva da entrambi
+            p1Btn.classList.remove('player-selector-active');
+            p2Btn.classList.remove('player-selector-active');
+
+            // Aggiungi la classe attiva al pulsante corretto
+            if (currentSelectionTarget === 1) {
+                p1Btn.classList.add('player-selector-active');
+                statusText.textContent = 'SELEZIONE ATTIVA: PLAYER 1';
+            } else {
+                p2Btn.classList.add('player-selector-active');
+                statusText.textContent = 'SELEZIONE ATTIVA: PLAYER 2';
+            }
+        }
+
+        // Funzione per generare le miniature dei personaggi
+        function renderRoster() {
+            const rosterGrid = document.getElementById('roster-grid');
+            rosterGrid.innerHTML = ''; // Pulisce la griglia
+
+            roster.forEach(char => {
+                const img = document.createElement('img');
+                img.src = char.small_img_url;
+                img.alt = char.name;
+                // Aggiorna il tooltip per usare il target di selezione corrente
+                img.title = `Clicca per assegnare ${char.name} a P${currentSelectionTarget}`;
+                img.className = 'character-thumbnail rounded-md';
+                img.dataset.name = char.name; // Usa il nome come identificatore
+
+                // Gestione click sinistro (assegna al Player attivo)
+                img.addEventListener('click', (e) => {
+                    e.preventDefault(); 
+                    selectCharacter(char, currentSelectionTarget);
+                });
+                
+                // Rimuovi la gestione del click destro precedente
+                img.addEventListener('contextmenu', (e) => {
+                    e.preventDefault(); // Impedisce la visualizzazione del menu contestuale
+                });
+
+                rosterGrid.appendChild(img);
+            });
+        }
+
+        // Funzione per selezionare un personaggio
+        function selectCharacter(char, playerNum) {
+            if (playerNum === 1) {
+                // Se P1 seleziona un personaggio già selezionato da P2, scambia P2 con null
+                if (player2 && player2.name === char.name) {
+                    player2 = null;
+                    updatePlayerDisplay(2);
+                }
+                player1 = char;
+            } else { // playerNum === 2
+                // Se P2 seleziona un personaggio già selezionato da P1, scambia P1 con null
+                if (player1 && player1.name === char.name) {
+                    player1 = null;
+                    updatePlayerDisplay(1);
+                }
+                player2 = char;
+            }
+
+            updatePlayerDisplay(playerNum);
+            updateThumbnails();
+            checkFightReadiness();
+            
+            // Dopo la selezione, passa automaticamente all'altro giocatore
+            toggleSelectionTarget();
+        }
+
+        // Funzione per aggiornare l'interfaccia di un giocatore (rimosse le barre di riempimento)
+        function updatePlayerDisplay(playerNum) {
+            const player = playerNum === 1 ? player1 : player2;
+            const prefix = `p${playerNum}`;
+
+            document.getElementById(`${prefix}-name`).textContent = player ? `NOME: ${player.name}` : 'NOME: ?';
+            document.getElementById(`${prefix}-portrait`).src = player ? player.large_img_url : `https://placehold.co/256x256/1a202c/ffffff?text=P${playerNum}`;
+            document.getElementById(`${prefix}-portrait`).alt = player ? player.name : `Ritratto Player ${playerNum}`;
+
+            const stats = player ? player.stats : { strength: 0, speed: 0, stamina: 0, charisma: 0 };
+
+            // Aggiorna solo la visualizzazione a stelle
+            Object.keys(stats).forEach(stat => {
+                const value = stats[stat];
+
+                // Aggiorna la visualizzazione a stelle
+                const starsContainer = document.getElementById(`${prefix}-${stat}-stars`);
+                if (starsContainer) {
+                    starsContainer.textContent = getStarRatingHtml(value, MAX_STAT);
+                }
+            });
+        }
+
+        // Funzione per aggiornare i bordi delle miniature in base alla selezione
+        function updateThumbnails() {
+            document.querySelectorAll('.character-thumbnail').forEach(img => {
+                img.classList.remove('selected-p1', 'selected-p2');
+
+                if (player1 && img.dataset.name === player1.name) {
+                    img.classList.add('selected-p1');
+                }
+                if (player2 && img.dataset.name === player2.name) {
+                    img.classList.add('selected-p2');
+                }
+            });
+        }
+
+        // Funzione per abilitare il pulsante "COMBATTI"
+        function checkFightReadiness() {
+            const fightButton = document.getElementById('fightButton');
+            fightButton.disabled = !(player1 && player2); // Abilita solo se P1 e P2 sono selezionati
+            fightButton.textContent = (player1 && player2) ? `COMBATTI ${player1.name} VS ${player2.name}` : 'SELEZIONA ENTRAMBI I LOTTATORI';
+        }
+
+        // Funzione per simulare l'incontro
+        function simulateMatch() {
+            if (!player1 || !player2) return;
+
+            // 1. Calcolo del Punteggio Totale (Total Raw Power) per ciascun lottatore
+            const p1TotalScore = Object.values(player1.stats).reduce((sum, stat) => sum + stat, 0);
+            const p2TotalScore = Object.values(player2.stats).reduce((sum, stat) => sum + stat, 0);
+
+            // 2. Calcolo della Sinergia (Bonus)
+            const statDifference = Math.abs(p1TotalScore - p2TotalScore);
+            let p1Bonus = 0;
+            let p2Bonus = 0;
+
+            // Lottatore più debole ottiene un piccolo bonus se ha alto Carisma (per scaldare la folla)
+            if (p1TotalScore < p2TotalScore && player1.stats.charisma > 3) {
+                p1Bonus += 1;
+            } else if (p2TotalScore < p1TotalScore && player2.stats.charisma > 3) {
+                p2Bonus += 1;
+            }
+
+            // Lottatore con Resistenza molto alta ottiene un bonus in incontri lunghi
+            if (player1.stats.stamina === MAX_STAT) p1Bonus += 1;
+            if (player2.stats.stamina === MAX_STAT) p2Bonus += 1;
+
+
+            const p1FinalScore = p1TotalScore + p1Bonus;
+            const p2FinalScore = p2TotalScore + p2Bonus;
+
+            // 3. Risultato con un elemento casuale (il wrestling è imprevedibile!)
+            const randomFactor = Math.random() * 2; // Valore casuale tra 0 e 2
+            const p1Chance = p1FinalScore * randomFactor;
+            const p2Chance = p2FinalScore * (2 - randomFactor); // Inversa per P2
+
+            let winner = null;
+            let summaryText = `Un incontro epico tra **${player1.name}** e **${player2.name}**! `;
+
+            if (p1Chance > p2Chance) {
+                winner = player1;
+                summaryText += `${player1.name} ha mostrato la sua superiore Forza e Velocità, chiudendo l'incontro con una mossa finale spettacolare.`;
+            } else if (p2Chance > p1Chance) {
+                winner = player2;
+                summaryText += `${player2.name} ha resistito a una serie di attacchi devastanti, sfruttando la sua Resistenza superiore per cogliere di sorpresa l'avversario e vincere.`;
+            } else {
+                // Molto improbabile con i numeri casuali, ma gestiamo il pareggio
+                winner = { name: "PAREGGIO" };
+                summaryText += "L'incontro si conclude in un caotico Doppio K.O.! Nessun vincitore.";
+            }
+
+            // 4. Mostra i risultati nella modal
+            showResults(winner, summaryText);
+        }
+
+        // Funzione per mostrare la modal dei risultati
+        function showResults(winner, summaryHtml) {
+            const modal = document.getElementById('result-modal');
+            const winnerAnnouncement = document.getElementById('winner-announcement');
+            const matchSummary = document.getElementById('match-summary');
+
+            if (winner.name === "PAREGGIO") {
+                winnerAnnouncement.textContent = "È un pareggio!";
+                winnerAnnouncement.classList.remove('text-green-400');
+                winnerAnnouncement.classList.add('text-yellow-400');
+            } else {
+                winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
+                winnerAnnouncement.classList.add('text-green-400');
+                winnerAnnouncement.classList.remove('text-yellow-400');
+            }
+
+            // Inserisce il riassunto, usando la sintassi di Markdown semplice per il grassetto (simulato)
+            matchSummary.innerHTML = summaryHtml.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
+            modal.classList.remove('hidden');
+        }
+
+        // Funzione per chiudere la modal dei risultati
+        function closeModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+
+        // Inizializzazione all'avvio
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRoster(); // Disegna la griglia di selezione
+            updatePlayerDisplay(1); // Inizializza P1 a vuoto
+            updatePlayerDisplay(2); // Inizializza P2 a vuoto
+            
+            // Imposta P1 come target iniziale e aggiorna il display
+            setSelectionTarget(1); 
+
+            document.getElementById('fightButton').addEventListener('click', simulateMatch);
+            checkFightReadiness(); // Aggiorna lo stato iniziale del pulsante
+        });
+    </script>
+
+</body>
+</html>

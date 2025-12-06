@@ -235,7 +235,7 @@
                 SELEZIONE ATTIVA: PLAYER 1
             </p>
             
-            <!-- Nuovo Pulsante Toggle -->
+            <!-- Pulsante Toggle -->
             <button id="toggle-target-btn" onclick="toggleSelectionTarget()"
                     class="px-6 py-2 mb-6 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition duration-150 uppercase border-2 border-green-400 text-sm shadow-md">
                 CAMBIA LOTTATORE (P1 ↔ P2)
@@ -261,6 +261,11 @@
     <div id="result-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
         <div class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
             <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
+            
+            <!-- Placeholder per l'immagine GIF -->
+            <!-- La GIF viene caricata casualmente dal JS al momento della vittoria -->
+            <img id="winner-gif" class="w-full max-w-xs mx-auto my-4 rounded-lg shadow-xl" alt="Momento saliente dell'incontro" src="https://placehold.co/300x150/1a202c/ffffff?text=GIF">
+
             <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
                 <!-- Riepilogo dell'incontro -->
             </div>
@@ -319,7 +324,6 @@
                 large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/49/15-49-00-781_256.gif",
                 stats: { strength: 3, speed: 3, stamina: 5, charisma: 5 }
             },
-            // NUOVI PERSONAGGI AGGIUNTI
             {
                 name: "TOMMY",
                 small_img_url: "https://i.imgur.com/KgK4Pua.jpeg",
@@ -346,50 +350,79 @@
             }
         ];
 
-        // Stato dell'applicazione
-        let player1 = null; // Memorizza l'oggetto personaggio selezionato per P1
-        let player2 = null; // Memorizza l'oggetto personaggio selezionato per P2
-        let currentSelectionTarget = 1; // 1 per P1, 2 per P2
+        // Lista di URL per le GIF da mostrare alla vittoria 
+        const winnerGifs = [
+            "https://media.tenor.com/S-24Aapm_74AAAAM/big-show-paul-donald-wight-ii.gif",
+            "https://media.tenor.com/esyQV4buNV4AAAAM/austin-theory-stone-cold.gif",
+            "https://media.tenor.com/v2PhT0muq0IAAAAM/100.gif",
+            "https://media.tenor.com/aGf6YP1ztKsAAAA1/logan-paul-cody-rhodes.webp",
+            "https://media.tenor.com/vGclFLmKo1AAAAAM/brock-lesnar-wwe.gif",
+            "https://media.tenor.com/aXkIz-vTZI4AAAAm/sleep-wwe.webp",
+            "https://media.tenor.com/Rj3ZUiIeTkoAAAAM/undertaker-wwe.gif",
+            "https://media.tenor.com/4v_AytYR5NkAAAAM/undertaker-brock.gif",
+            // NUOVE GIF AGGIUNTE (Goldberg)
+            "https://media.tenor.com/ngB68i7QKLsAAAA1/goldberg-charles-robinson.webp",
+            "https://media.tenor.com/N-5vkrbVE8cAAAAM/wwe-goldberg.gif",
+            "https://media.tenor.com/k681dBpXlBcAAAA1/goldberg-gunther.webp",
+            "https://media.tenor.com/lGgvHfHsndEAAAAM/goldberg-jackhammer.gif",
+            "https://media.tenor.com/r_HjtnG3VnAAAAAM/goldberg-spear.gif",
+            "https://media.tenor.com/b-sMu_fiBXsAAAAM/goldberg-spear.gif"
+        ];
 
-        // Punteggio massimo per le statistiche (utile per la visualizzazione delle barre)
+        // Stato dell'applicazione
+        let player1 = null; 
+        let player2 = null; 
+        let currentSelectionTarget = 1; 
         const MAX_STAT = 5;
+
+        // Nuove descrizioni dell'incontro (più variabili)
+        const matchDescriptions = [
+            (p1Name, p2Name) => `Dopo una battaglia di **30 minuti** ad alta intensità, ${p1Name} è riuscito a connettere la sua mossa più devastante su ${p2Name}, chiudendo l'incontro in modo drammatico. Il pubblico è in delirio!`,
+            (p1Name, p2Name) => `L'arbitro è andato al tappeto! ${p2Name} ha tentato di usare un oggetto contundente, ma ${p1Name} ha ribaltato la situazione all'ultimo secondo, ottenendo una vittoria sporca ma cruciale!`,
+            (p1Name, p2Name) => `Incredibile dimostrazione di resistenza da parte di ${p1Name}, che ha incassato tre manovre di sottomissione da ${p2Name} prima di trovare l'energia per un Roll-up vincente!`,
+            (p1Name, p2Name) => `Un match tecnico e veloce. ${p2Name} ha provato a dominare con la Forza, ma ${p1Name}, con la sua **Velocità** fulminea, ha evitato il colpo e ha messo a segno il pin vincente.`,
+            (p1Name, p2Name) => `${p1Name} e ${p2Name} si sono dati battaglia senza esclusione di colpi. La loro **rivalità** ha raggiunto l'apice, e la vittoria è andata a ${p1Name} grazie a un inaspettato (e forse illegale) colpo basso.`,
+            (p1Name, p2Name) => `Il combattimento si è svolto principalmente fuori dal ring, una vera rissa di strada. Alla fine, ${p1Name} ha riportato ${p2Name} sul quadrato giusto in tempo per la vittoria!`,
+            (p1Name, p2Name) => `${p1Name} ha messo in mostra il suo **Carisma** unico, ipnotizzando la folla e distraendo ${p2Name} abbastanza a lungo per sferrare il colpo di grazia. Vittoria meritata!`,
+            // Nuove descrizioni
+            (p1Name, p2Name) => `**Colpo di scena!** ${p1Name} sembrava spacciato, ma un guizzo di **Resistenza** gli ha permesso di uscire dalla sottomissione di ${p2Name} e ottenere il pin in contropiede.`,
+            (p1Name, p2Name) => `Una vera e propria battaglia di **Forza** bruta! ${p2Name} ha dominato per gran parte del tempo, ma la determinazione e l'esperienza di ${p1Name} lo hanno portato alla vittoria dopo una serie di Powerbomb.`,
+            (p1Name, p2Name) => `I due si sono scambiati colpi a terra per minuti infiniti. Alla fine, ${p1Name} è riuscito ad agganciare una manovra di sottomissione letale, costringendo ${p2Name} alla resa.`,
+        ];
+
 
         // Funzione helper per generare la stringa HTML delle stelle
         function getStarRatingHtml(value, max) {
-            const filledStar = '★'; // Stella piena (Unicode)
-            const emptyStar = '☆'; // Stella vuota (Unicode)
+            const filledStar = '★'; 
+            const emptyStar = '☆'; 
             let html = '';
             for (let i = 1; i <= max; i++) {
-                // Aggiunge una stella piena se il valore è raggiunto o superato, altrimenti una stella vuota
                 html += (i <= value) ? filledStar : emptyStar;
             }
             return html;
         }
         
-        // NUOVA FUNZIONE: Alterna il target di selezione
+        // Alterna il target di selezione
         function toggleSelectionTarget() {
-            // Seleziona il giocatore opposto
             currentSelectionTarget = currentSelectionTarget === 1 ? 2 : 1;
             updatePlayerSelectorDisplay();
         }
 
-        // Funzione per impostare il Player attualmente selezionato
+        // Imposta il Player attualmente selezionato
         function setSelectionTarget(playerNum) {
             currentSelectionTarget = playerNum;
             updatePlayerSelectorDisplay();
         }
 
-        // Funzione per aggiornare l'indicatore di selezione P1/P2
+        // Aggiorna l'indicatore di selezione P1/P2
         function updatePlayerSelectorDisplay() {
             const p1Btn = document.getElementById('p1-select-btn');
             const p2Btn = document.getElementById('p2-select-btn');
             const statusText = document.getElementById('selection-status');
 
-            // Rimuovi la classe attiva da entrambi
             p1Btn.classList.remove('player-selector-active');
             p2Btn.classList.remove('player-selector-active');
 
-            // Aggiungi la classe attiva al pulsante corretto
             if (currentSelectionTarget === 1) {
                 p1Btn.classList.add('player-selector-active');
                 statusText.textContent = 'SELEZIONE ATTIVA: PLAYER 1';
@@ -399,46 +432,41 @@
             }
         }
 
-        // Funzione per generare le miniature dei personaggi
+        // Genera le miniature dei personaggi
         function renderRoster() {
             const rosterGrid = document.getElementById('roster-grid');
-            rosterGrid.innerHTML = ''; // Pulisce la griglia
+            rosterGrid.innerHTML = ''; 
 
             roster.forEach(char => {
                 const img = document.createElement('img');
                 img.src = char.small_img_url;
                 img.alt = char.name;
-                // Aggiorna il tooltip per usare il target di selezione corrente
                 img.title = `Clicca per assegnare ${char.name} a P${currentSelectionTarget}`;
                 img.className = 'character-thumbnail rounded-md';
-                img.dataset.name = char.name; // Usa il nome come identificatore
+                img.dataset.name = char.name; 
 
-                // Gestione click sinistro (assegna al Player attivo)
                 img.addEventListener('click', (e) => {
                     e.preventDefault(); 
                     selectCharacter(char, currentSelectionTarget);
                 });
                 
-                // Rimuovi la gestione del click destro precedente
                 img.addEventListener('contextmenu', (e) => {
-                    e.preventDefault(); // Impedisce la visualizzazione del menu contestuale
+                    e.preventDefault(); 
                 });
 
                 rosterGrid.appendChild(img);
             });
         }
 
-        // Funzione per selezionare un personaggio
+        // Seleziona un personaggio
         function selectCharacter(char, playerNum) {
             if (playerNum === 1) {
-                // Se P1 seleziona un personaggio già selezionato da P2, scambia P2 con null
                 if (player2 && player2.name === char.name) {
                     player2 = null;
                     updatePlayerDisplay(2);
                 }
                 player1 = char;
             } else { // playerNum === 2
-                // Se P2 seleziona un personaggio già selezionato da P1, scambia P1 con null
                 if (player1 && player1.name === char.name) {
                     player1 = null;
                     updatePlayerDisplay(1);
@@ -450,11 +478,11 @@
             updateThumbnails();
             checkFightReadiness();
             
-            // Dopo la selezione, passa automaticamente all'altro giocatore
+            // Passa automaticamente all'altro giocatore
             toggleSelectionTarget();
         }
 
-        // Funzione per aggiornare l'interfaccia di un giocatore (rimosse le barre di riempimento)
+        // Aggiorna l'interfaccia di un giocatore
         function updatePlayerDisplay(playerNum) {
             const player = playerNum === 1 ? player1 : player2;
             const prefix = `p${playerNum}`;
@@ -465,11 +493,8 @@
 
             const stats = player ? player.stats : { strength: 0, speed: 0, stamina: 0, charisma: 0 };
 
-            // Aggiorna solo la visualizzazione a stelle
             Object.keys(stats).forEach(stat => {
                 const value = stats[stat];
-
-                // Aggiorna la visualizzazione a stelle
                 const starsContainer = document.getElementById(`${prefix}-${stat}-stars`);
                 if (starsContainer) {
                     starsContainer.textContent = getStarRatingHtml(value, MAX_STAT);
@@ -477,7 +502,7 @@
             });
         }
 
-        // Funzione per aggiornare i bordi delle miniature in base alla selezione
+        // Aggiorna i bordi delle miniature
         function updateThumbnails() {
             document.querySelectorAll('.character-thumbnail').forEach(img => {
                 img.classList.remove('selected-p1', 'selected-p2');
@@ -491,102 +516,118 @@
             });
         }
 
-        // Funzione per abilitare il pulsante "COMBATTI"
+        // Abilita il pulsante "COMBATTI"
         function checkFightReadiness() {
             const fightButton = document.getElementById('fightButton');
-            fightButton.disabled = !(player1 && player2); // Abilita solo se P1 e P2 sono selezionati
+            fightButton.disabled = !(player1 && player2); 
             fightButton.textContent = (player1 && player2) ? `COMBATTI ${player1.name} VS ${player2.name}` : 'SELEZIONA ENTRAMBI I LOTTATORI';
         }
 
-        // Funzione per simulare l'incontro
+        // Funzione di simulazione aggiornata
         function simulateMatch() {
             if (!player1 || !player2) return;
 
-            // 1. Calcolo del Punteggio Totale (Total Raw Power) per ciascun lottatore
+            // 1. Calcolo del Punteggio Totale Base
             const p1TotalScore = Object.values(player1.stats).reduce((sum, stat) => sum + stat, 0);
             const p2TotalScore = Object.values(player2.stats).reduce((sum, stat) => sum + stat, 0);
 
-            // 2. Calcolo della Sinergia (Bonus)
-            const statDifference = Math.abs(p1TotalScore - p2TotalScore);
+            // 2. Calcolo del Bonus (Carisma vs Svantaggio, Resistenza)
             let p1Bonus = 0;
             let p2Bonus = 0;
 
-            // Lottatore più debole ottiene un piccolo bonus se ha alto Carisma (per scaldare la folla)
-            if (p1TotalScore < p2TotalScore && player1.stats.charisma > 3) {
-                p1Bonus += 1;
-            } else if (p2TotalScore < p1TotalScore && player2.stats.charisma > 3) {
-                p2Bonus += 1;
-            }
+            // Bonus Carisma (se il punteggio è basso, il carisma aiuta a recuperare)
+            if (p1TotalScore < p2TotalScore && player1.stats.charisma > 3) p1Bonus += 1;
+            if (p2TotalScore < p1TotalScore && player2.stats.charisma > 3) p2Bonus += 1;
 
-            // Lottatore con Resistenza molto alta ottiene un bonus in incontri lunghi
+            // Bonus Resistenza per incontri lunghi
             if (player1.stats.stamina === MAX_STAT) p1Bonus += 1;
             if (player2.stats.stamina === MAX_STAT) p2Bonus += 1;
-
 
             const p1FinalScore = p1TotalScore + p1Bonus;
             const p2FinalScore = p2TotalScore + p2Bonus;
 
-            // 3. Risultato con un elemento casuale (il wrestling è imprevedibile!)
-            const randomFactor = Math.random() * 2; // Valore casuale tra 0 e 2
-            const p1Chance = p1FinalScore * randomFactor;
-            const p2Chance = p2FinalScore * (2 - randomFactor); // Inversa per P2
+            // 3. Risultato con un elemento CASUALE (più variabile)
+            // Moltiplicatore casuale tra 0.5 e 3.0
+            const p1RandomMultiplier = Math.random() * 2.5 + 0.5; 
+            const p2RandomMultiplier = Math.random() * 2.5 + 0.5; 
+
+            const p1Chance = p1FinalScore * p1RandomMultiplier;
+            const p2Chance = p2FinalScore * p2RandomMultiplier;
 
             let winner = null;
-            let summaryText = `Un incontro epico tra **${player1.name}** e **${player2.name}**! `;
+            let summaryText;
 
-            if (p1Chance > p2Chance) {
-                winner = player1;
-                summaryText += `${player1.name} ha mostrato la sua superiore Forza e Velocità, chiudendo l'incontro con una mossa finale spettacolare.`;
-            } else if (p2Chance > p1Chance) {
-                winner = player2;
-                summaryText += `${player2.name} ha resistito a una serie di attacchi devastanti, sfruttando la sua Resistenza superiore per cogliere di sorpresa l'avversario e vincere.`;
-            } else {
-                // Molto improbabile con i numeri casuali, ma gestiamo il pareggio
+            const absoluteDifference = Math.abs(p1Chance - p2Chance);
+            
+            // Soglia del pareggio (2.5 è un buon valore per la variabilità)
+            const DRAW_THRESHOLD = 2.5; 
+
+            if (absoluteDifference < DRAW_THRESHOLD) {
+                // PAREGGIO
                 winner = { name: "PAREGGIO" };
-                summaryText += "L'incontro si conclude in un caotico Doppio K.O.! Nessun vincitore.";
+                summaryText = `I due lottatori si sono dati battaglia fino allo sfinimento! L'arbitro non ha avuto altra scelta che dichiarare un **Doppio K.O.** Nessun vincitore. Preparatevi per la rivincita!`;
+            } else if (p1Chance > p2Chance) {
+                winner = player1;
+                // Seleziona una descrizione casuale per la vittoria
+                const descFn = matchDescriptions[Math.floor(Math.random() * matchDescriptions.length)];
+                summaryText = descFn(player1.name, player2.name);
+            } else {
+                winner = player2;
+                 // Seleziona una descrizione casuale per la vittoria, invertendo i nomi
+                const descFn = matchDescriptions[Math.floor(Math.random() * matchDescriptions.length)];
+                // Il nome del vincitore deve essere sempre il primo argomento per la descrizione
+                summaryText = descFn(player2.name, player1.name); 
             }
 
             // 4. Mostra i risultati nella modal
             showResults(winner, summaryText);
         }
 
-        // Funzione per mostrare la modal dei risultati
+        // Mostra la modal dei risultati con l'immagine casuale
         function showResults(winner, summaryHtml) {
             const modal = document.getElementById('result-modal');
             const winnerAnnouncement = document.getElementById('winner-announcement');
             const matchSummary = document.getElementById('match-summary');
-
+            const gifElement = document.getElementById('winner-gif');
+            
+            // NUOVA LOGICA: Seleziona sempre una GIF casuale, anche in caso di pareggio.
+            const randomIndex = Math.floor(Math.random() * winnerGifs.length);
+            gifElement.src = winnerGifs[randomIndex];
+            
+            // 1. Aggiorna Annuncio e classi
             if (winner.name === "PAREGGIO") {
-                winnerAnnouncement.textContent = "È un pareggio!";
+                winnerAnnouncement.textContent = "È un PAREGGIO!";
                 winnerAnnouncement.classList.remove('text-green-400');
                 winnerAnnouncement.classList.add('text-yellow-400');
+                // Rimuove l'opacità, visto che usiamo una GIF vera
+                gifElement.classList.remove('opacity-50'); 
             } else {
                 winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
                 winnerAnnouncement.classList.add('text-green-400');
                 winnerAnnouncement.classList.remove('text-yellow-400');
+                gifElement.classList.remove('opacity-50');
             }
 
-            // Inserisce il riassunto, usando la sintassi di Markdown semplice per il grassetto (simulato)
+            // 3. Inserisce il riassunto
             matchSummary.innerHTML = summaryHtml.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
             modal.classList.remove('hidden');
         }
 
-        // Funzione per chiudere la modal dei risultati
+        // Chiude la modal
         function closeModal() {
             document.getElementById('result-modal').classList.add('hidden');
         }
 
         // Inizializzazione all'avvio
         document.addEventListener('DOMContentLoaded', () => {
-            renderRoster(); // Disegna la griglia di selezione
-            updatePlayerDisplay(1); // Inizializza P1 a vuoto
-            updatePlayerDisplay(2); // Inizializza P2 a vuoto
+            renderRoster(); 
+            updatePlayerDisplay(1); 
+            updatePlayerDisplay(2); 
             
-            // Imposta P1 come target iniziale e aggiorna il display
             setSelectionTarget(1); 
 
             document.getElementById('fightButton').addEventListener('click', simulateMatch);
-            checkFightReadiness(); // Aggiorna lo stato iniziale del pulsante
+            checkFightReadiness(); 
         });
     </script>
 

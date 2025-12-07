@@ -130,6 +130,21 @@
         /* Ajustments per P1 e P2 (solo stelle) */
         #p1-stats .flex { justify-content: space-between; }
         #p2-stats .flex { justify-content: space-between; }
+
+        /* Stile per lo spinner di caricamento */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3b82f6; /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
     </style>
 </head>
 <body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
@@ -153,6 +168,7 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     <!-- Immagine grande P1 -->
                     <div class="w-full sm:w-1/2 h-48 sm:h-64 bg-gray-900 rounded-md overflow-hidden flex items-center justify-center">
+                        <!-- Placeholder iniziale corretto -->
                         <img id="p1-portrait" class="character-portrait" src="https://placehold.co/256x256/1a202c/ffffff?text=P1" alt="Ritratto Player 1">
                     </div>
                     <!-- Statistiche P1 -->
@@ -196,6 +212,7 @@
                 <div class="flex flex-col sm:flex-row-reverse gap-4">
                     <!-- Immagine grande P2 -->
                     <div class="w-full sm:w-1/2 h-48 sm:h-64 bg-gray-900 rounded-md overflow-hidden flex items-center justify-center">
+                        <!-- Placeholder iniziale corretto -->
                         <img id="p2-portrait" class="character-portrait" src="https://placehold.co/256x256/1a202c/ffffff?text=P2" alt="Ritratto Player 2">
                     </div>
                     <!-- Statistiche P2 -->
@@ -259,22 +276,35 @@
 
     <!-- MODAL RISULTATO INCONTRO -->
     <div id="result-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
-        <div class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
-            <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
+        <div id="modal-content" class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
             
-            <!-- Placeholder per l'immagine GIF -->
-            <!-- La GIF viene caricata casualmente dal JS al momento della vittoria -->
-            <img id="winner-gif" class="w-full max-w-xs mx-auto my-4 rounded-lg shadow-xl" alt="Momento saliente dell'incontro" src="https://placehold.co/300x150/1a202c/ffffff?text=GIF">
-
-            <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
-                <!-- Riepilogo dell'incontro -->
+            <!-- 1. SCHERMO DI SUSPENSE (Mostrato per primo) -->
+            <div id="suspense-screen" class="flex flex-col items-center justify-center p-8 text-white">
+                <div class="loader mb-6"></div>
+                <h2 class="text-3xl font-extrabold text-red-400 mb-2 pixel-text animate-pulse">MATCH IN CORSO!</h2>
+                <p class="text-xl text-yellow-300 pixel-text">L'arbitro sta decidendo...</p>
+                <p class="text-sm mt-4 text-gray-400">Preparati per il pin vincente!</p>
             </div>
-            <p id="winner-announcement" class="text-3xl font-bold mb-8 text-green-400 uppercase pixel-text">
-                <!-- Annuncio del vincitore -->
-            </p>
-            <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-150">
-                Torna al Selettore
-            </button>
+            
+            <!-- 2. RISULTATO FINALE (Mostrato solo quando la GIF è pronta) -->
+            <div id="final-result" class="hidden opacity-0 transition-opacity duration-500">
+                <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
+                
+                <!-- Placeholder per l'immagine GIF (solo per pre-caricamento, non visibile subito) -->
+                <!-- La classe opacity-0 è gestita dal parent #final-result -->
+                <img id="winner-gif" class="w-full max-w-xs mx-auto my-4 rounded-lg shadow-xl" src="" alt="Momento saliente dell'incontro">
+
+                <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
+                    <!-- Riepilogo dell'incontro -->
+                </div>
+                <p id="winner-announcement" class="text-3xl font-bold mb-8 text-green-400 uppercase pixel-text">
+                    <!-- Annuncio del vincitore -->
+                </p>
+                <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-150">
+                    Torna al Selettore
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -347,11 +377,13 @@
                 small_img_url: "https://i.imgur.com/Pfx4ycR.jpeg",
                 large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/48/15-48-55-570_256.gif",
                 stats: { strength: 4, speed: 2, stamina: 2, charisma: 4 }
-            }
+            }, 
         ];
 
-        // Lista di URL per le GIF da mostrare alla vittoria 
-        const winnerGifs = [
+        // --- Lista di GIF per i Lottatori ---
+        
+        // GIF generiche (per Pareggi o lottatori non specificati)
+        const genericWinnerGifs = [
             "https://media.tenor.com/S-24Aapm_74AAAAM/big-show-paul-donald-wight-ii.gif",
             "https://media.tenor.com/esyQV4buNV4AAAAM/austin-theory-stone-cold.gif",
             "https://media.tenor.com/v2PhT0muq0IAAAAM/100.gif",
@@ -360,36 +392,166 @@
             "https://media.tenor.com/aXkIz-vTZI4AAAAm/sleep-wwe.webp",
             "https://media.tenor.com/Rj3ZUiIeTkoAAAAM/undertaker-wwe.gif",
             "https://media.tenor.com/4v_AytYR5NkAAAAM/undertaker-brock.gif",
-            // NUOVE GIF AGGIUNTE (Goldberg)
             "https://media.tenor.com/ngB68i7QKLsAAAA1/goldberg-charles-robinson.webp",
             "https://media.tenor.com/N-5vkrbVE8cAAAAM/wwe-goldberg.gif",
             "https://media.tenor.com/k681dBpXlBcAAAA1/goldberg-gunther.webp",
             "https://media.tenor.com/lGgvHfHsndEAAAAM/goldberg-jackhammer.gif",
             "https://media.tenor.com/r_HjtnG3VnAAAAAM/goldberg-spear.gif",
-            "https://media.tenor.com/b-sMu_fiBXsAAAAM/goldberg-spear.gif"
+            "https://media.tenor.com/b-sMu_fiBXsAAAAM/goldberg-spear.gif",
         ];
+        
+        // GIF specifiche per la vittoria di Tommy (tema AJ Styles)
+        const tommyWinnerGifs = [
+            "https://media1.tenor.com/m/4GVgj5QoTvwAAAAd/wwe-aj-styles.gif",
+            "https://media1.tenor.com/m/9uGlZEzxXuAAAAAd/aj-styles-wwe.gif",
+            "https://media1.tenor.com/m/C9PEvV0BQcAAAAAd/aj-styles-wwe-aj-styles.gif",
+            "https://media1.tenor.com/m/PqOQqYOZqG8AAAAd/wwe-aj-styles.gif",
+            "https://media1.tenor.com/m/QrDufB70N7cAAAAd/aj-styles-styles-clash.gif",
+        ];
+
+        // GIF specifiche (altri lottatori)
+        const ascioneWinnerGifs = [ 
+            "https://media1.tenor.com/m/VbQo4-uQIK4AAAAd/big-show-entrance.gif",
+            "https://media1.tenor.com/m/-RUGRztc2qoAAAAd/wwe-world-wrestling-entertainment.gif",
+            "https://media1.tenor.com/m/1-i1-EbI4IMAAAAd/matt-jackson-young-bucks.gif",
+            "https://media1.tenor.com/m/6JaDLIKzOJkAAAAd/show-bar-cesaro.gif",
+        ];
+        const flavioWinnerGifs = [ 
+            "https://media1.tenor.com/m/GZlSCVfe92QAAAAd/jbl-john-bradshaw-layfield.gif",
+            "https://media1.tenor.com/m/DFKDx5PGkTsAAAAd/john-bradshaw-layfield-jbl.gif",
+            "https://media1.tenor.com/m/x2R3uH2g0_AAAAAd/wrestling-wwe.gif",
+            "https://media1.tenor.com/m/wnPUhLzlzqQAAAAd/john-bradshaw-layfield-jbl.gif",
+            "https://media1.tenor.com/m/__tT1hXLigcAAAAd/jbl-entrance.gif",
+        ];
+        const zampaWinnerGifs = [ 
+            "https://media1.tenor.com/m/ZsLd5yyNxoIAAAAd/the-undertaker-aj-styles.gif",
+            "https://media1.tenor.com/m/hxiyT3JPRacAAAAd/wwe-wwe-smackdown.gif",
+            "https://media1.tenor.com/m/P-BllVEAlfkAAAAd/the-undertaker-aj-styles.gif",
+            "https://media1.tenor.com/m/hRt025P0HIMAAAAd/waking-up-anger.gif",
+            "https://media1.tenor.com/m/xpk-IHT-t7QAAAAd/the-undertaker-chokeslam.gif",
+        ];
+        const angeloWinnerGifs = [ 
+            "https://media1.tenor.com/m/TuA_OwJ1BdMAAAAd/eddie-guerrero-frog-splash.gif",
+            "https://media1.tenor.com/m/XuJec8SKucwAAAAC/eddie-guerrero-wwe.gif",
+            "https://media1.tenor.com/m/dA7UEt2yF1EAAAAd/eddie-guerrero-frog-splash.gif",
+            "https://media1.tenor.com/m/64eM-DGLe_oAAAAd/eddie-guerrero-wwe.gif",
+        ];
+        const stefanoWinnerGifs = [ 
+            "https://media1.tenor.com/m/OWhl9TvSqAIAAAAd/randy-orton-pose.gif",
+            "https://media1.tenor.com/m/l2jvj-O7CMUAAAAd/randy-orton-rko.gif",
+            "https://media1.tenor.com/m/k8EI7tNpVUMAAAAd/rko-wwe.gif",
+            "https://media1.tenor.com/m/EKyHlha2SdcAAAAd/randy-orton-pose.gif",
+        ];
+        const paoloWinnerGifs = [ 
+            "https://media1.tenor.com/m/g2-pIL6irMQAAAAd/stone-cold-steve-austin.gif",
+            "https://media1.tenor.com/m/jKzHaFs44K0AAAAd/behold-me.gif",
+            "https://media1.tenor.com/m/35hZ83zKFesAAAAd/stone-cold-steve-austin-entrance.gif",
+            "https://media1.tenor.com/m/8uBc_KLcnloAAAAd/stone-cold-steve-austin-chairshot.gif",
+            "https://media1.tenor.com/m/esyQV4buNV4AAAAd/austin-theory-stone-cold.gif",
+            "https://media1.tenor.com/m/jg1yipA4-jIAAAAd/stone-cold-steve-austin-beer-bash.gif",
+        ];
+        const cianiWinnerGifs = [ 
+            "https://media1.tenor.com/m/mD_XPfPW7goAAAAd/mick-foley-entrance.gif",
+            "https://media1.tenor.com/m/usbxRbC88lIAAAAd/edge-spear.gif",
+            "https://media1.tenor.com/m/TY6Wr7-jM6QAAAAd/dudelove-dude.gif",
+            "https://media1.tenor.com/m/7ZjInbcpTbgAAAAd/mick-foley-elbow-drop.gif",
+            "https://media1.tenor.com/m/g0Qp5zQMZFAAAAAd/mick-foley-barbed-wire-baseball-bat.gif",
+        ];
+        const tassoWinnerGifs = [ 
+            "https://media1.tenor.com/m/EHNYe49VqJYAAAAd/chris-benoit-german-suplex.gif",
+            "https://media1.tenor.com/m/9xIx7OmOcWgAAAAd/chris-benoit-belly-to-back-suplex.gif",
+            "https://media1.tenor.com/m/3Kv7P5OXEnsAAAAd/chris-benoit-belly-to-back-suplex.gif",
+            "https://media1.tenor.com/m/xZilRiuU_4oAAAAd/chris-benoit-crippler-crossface.gif",
+            "https://media1.tenor.com/m/9xIx7OmOcWgAAAAd/chris-benoit-belly-to-back-suplex.gif",
+            "https://media1.tenor.com/m/cFgcx9JpKmoAAAAd/chris-benoit-wwe.gif",
+            "https://media1.tenor.com/m/ya9NkgY5BIQAAAAd/chris-benoit-pushups.gif",
+            "https://media1.tenor.com/m/wQwUPYixHCMAAAAd/chris-benoit-diving-headbutt.gif",
+            "https://media1.tenor.com/m/QrptYWHjOJUAAAAd/chris-benoit-crippler-crossface.gif",
+        ];
+        const foschiWinnerGifs = [ 
+            "https://media1.tenor.com/m/qrN0wwCzhicAAAAd/daniel-bryan-yes.gif",
+            "https://media1.tenor.com/m/TcsXPXvzWhgAAAAd/daniel-bryan-yes-lock.gif",
+            "https://media1.tenor.com/m/Yho2FcmSDN8AAAAd/daniel-bryan-bryan-danielson.gif",
+            "https://media1.tenor.com/m/cL841OZY-SMAAAAAd/daniel-bryan-yes-kick.gif",
+            "https://media1.tenor.com/m/tQTm41p1gqQAAAAd/daniel-bryan-yes-kick.gif",
+            "https://media1.tenor.com/m/DLbIM6a37d0AAAAd/daniel-bryan-running-knee.gif",
+            "https://media1.tenor.com/m/sERkLPRkKUkAAAAd/daniel-bryan-stomps.gif",
+        ];
+        const castelWinnerGifs = [ 
+            "https://media1.tenor.com/m/IYvoYX4QVzIAAAAd/bret-hart-wwf-champion.gif",
+            "https://media1.tenor.com/m/ycaen8wP03IAAAAC/bret-hart-sharp-shooter.gif",
+            "https://media1.tenor.com/m/lYhpm5HyARcAAAAd/bret-hart-hitman.gif",
+            "https://media1.tenor.com/m/F44lh1Hiz4EAAAAd/bret-hart-superplex.gif",
+            "https://media1.tenor.com/m/vECGEuhBxzQAAAAd/bret-hart-bret-the-hitman-hart.gif",
+            "https://media1.tenor.com/m/CUfBMYBbyS4AAAAd/bret-hart-clothesline.gif",
+            "https://media1.tenor.com/m/dEPOdvVfRLQAAAAd/bret-hart-piledriver.gif",
+        ];
+
+        // --- Descrizioni degli Incontri ---
+
+        // Descrizioni specifiche basate sul vincitore (Aggiunte in base all'abbinamento)
+        const specificMatchDescriptions = {
+            "FLAVIO": [ // Ispirazione: JBL (Ricco Bullo)
+                (opponent) => `La folla ha urlato mentre **FLAVIO** caricava la sua devastante **Clothesline From Hell**! ${opponent} non ha avuto scampo contro la potenza del "Texas Millionaire". È un K.O. dominato dalla Forza.`,
+                (opponent) => `Flavio, con un atteggiamento arrogante da bullo ricco, ha colpito ${opponent} con una Powerbomb prima di umiliarlo con una serie di schiaffi. Vittoria prepotente e sporca per il "Big Man".`
+            ],
+            "TASSO": [ // Ispirazione: Chris Benoit (Tecnico Aggressivo)
+                (opponent) => `**TASSO** ha dominato l'incontro con una serie di **German Suplexes** che hanno scosso il ring! L'aggressività del "Wolverine" ha costretto ${opponent} al tappeto, aprendo la strada al pin vincente.`,
+                (opponent) => `In un finale tecnico, Tasso ha intrappolato ${opponent} nella sua micidiale **Crippler Crossface**! ${opponent} ha provato a resistere, ma l'agonismo e la precisione del "Cannibale" lo hanno costretto alla resa.`
+            ],
+            "CASTEL": [ // Ispirazione: Bret Hart (Tecnico Perfetto)
+                (opponent) => `La battaglia tecnica è finita quando **CASTEL** ha rovesciato ${opponent} nella sua famigerata sottomissione, la **Sharpshooter**! ${opponent} non ha potuto far altro che battere la mano in segno di resa.`,
+                (opponent) => `Dimostrazione di precisione: Castel ha colpito ${opponent} con una serie di colpi puliti e ha finalizzato l'incontro con un "Piledriver" perfetto, cementando il suo status di "Hitman".`
+            ],
+            "STEFANO": [ // Ispirazione: Randy Orton (La Vipera)
+                (opponent) => `**RKO! RKO! RKO!** Stefano ha messo a segno la sua manovra finale **dal nulla**, cogliendo ${opponent} completamente di sorpresa. La "Vipera" non ha dato scampo.`,
+                (opponent) => `Dopo aver dominato l'incontro con movimenti lenti e calcolati, Stefano ha sferrato il suo micidiale **Punt Kick**! ${opponent} è rimasto a terra in stato confusionale. L'arbitro ha fermato l'incontro.`
+            ],
+            "FOSCHI": [ // Ispirazione: Daniel Bryan (YES! Movement)
+                (opponent) => `Tutto il pubblico ha scandito "**YES! YES! YES!**" mentre **FOSCHI** chiudeva l'incontro con una fulminea **Running Knee**! L'energia della folla ha alimentato la sua vittoria.`,
+                (opponent) => `Foschi ha intrappolato ${opponent} nella sua micidiale **Yes Lock**! La pressione sul collo e sulla spalla era troppo forte. ${opponent} ha ceduto, e il "Capitano del Yes Movement" ha trionfato.`
+            ],
+            "PAOLO": [ // Ispirazione: Stone Cold Steve Austin (Ribelle Bevitore di Birra)
+                (opponent) => `**PAOLO** ha evitato un attacco e ha eseguito la sua mossa più iconica: una devastante **Stone Cold Stunner**! ${opponent} è rimasto al tappeto, stordito, mentre Paolo festeggiava con una birra.`,
+                (opponent) => `Il "Texas Rattlesnake" Paolo ha dominato ${opponent} a suon di pugni e colpi proibiti. Dopo aver spaccato una sedia sull'avversario, ha chiuso il match con il pin, senza curarsi delle regole. *E quello è l'bottom line!*`
+            ],
+            "ZAMPA": [ // Ispirazione: The Undertaker (Deadman)
+                (opponent) => `Le luci si sono spente e **ZAMPA** è riapparso dietro ${opponent}! La sua **Chokeslam** ha squarciato il ring! ${opponent} è stato poi sepolto con la micidiale **Tombstone Piledriver**.`,
+                (opponent) => `L'incontro è stato un lungo e oscuro massacro, con Zampa che ha incassato colpi apparentemente letali. L'essere soprannaturale si è rialzato al conteggio di 2 e ha chiuso la pratica con un **Last Ride** terrificante.`
+            ],
+            "TOMMY": [ // Ispirazione: AJ Styles (Phenomenal)
+                (opponent) => `È stato un duello **Phenomenal**! **TOMMY** ha messo a segno la **Styles Clash** dopo una rapida serie di manovre aeree. ${opponent} era troppo stordito per reagire!`,
+                (opponent) => `Incredibile: Tommy ha spiccato il volo e ha colpito ${opponent} con la **Phenomenal Forearm**! Un colpo aereo di precisione chirurgica che ha messo fine all'incontro. Il "Phenomenal One" vince!`
+            ],
+            "ASCIONE": [ // Ispirazione: Big Show (Il Gigante)
+                (opponent) => `Il gigante **ASCIONE** ha resistito a tutto e ha messo fine all'incontro con un singolo, devastante **Knockout Punch**! ${opponent} è crollato come un sacco di patate.`,
+                (opponent) => `Ascione ha usato la sua mole per dominare ${opponent}. Dopo una serie di Body Slam, ha sollevato ${opponent} e lo ha scaraventato al tappeto con una **Chokeslam** imparabile.`
+            ],
+            "CIANI": [ // Ispirazione: Mick Foley / Edge (Hardcore)
+                (opponent) => `**CIANI** ha tirato fuori da sotto il ring una mazza avvolta nel filo spinato! L'arbitro ha protestato, ma Ciani ha sferrato il colpo decisivo per il pin vincente. Caos totale!`,
+                (opponent) => `Con la **Spear** a tutta velocità, Ciani ha diviso in due ${opponent}, chiudendo l'incontro in pochi secondi. L'aggressività e la sconsideratezza di Ciani lo hanno portato alla vittoria.`
+            ],
+            "ANGELO": [ // Ispirazione: Eddie Guerrero (Latino Heat)
+                (opponent) => `**ANGELO** ha mostrato il suo "Latino Heat" e ha rubato la vittoria dopo un astuto stratagemma! Una volta che l'arbitro è stato distratto, ha messo a segno la sua **Frog Splash** perfetta.`,
+                (opponent) => `L'incontro si è concluso con l'inganno. Angelo ha finto di essere infortunato, distraendo ${opponent}, per poi cogliere l'occasione e chiudere con un **Roll-up** rapido e vincente. *¡Viva la Raza!*`
+            ]
+        };
+
+        // Descrizioni generiche (usate per pareggi o come fallback)
+        const genericMatchDescriptions = [
+            (p1Name, p2Name) => `Dopo una battaglia di **30 minuti** ad alta intensità, ${p1Name} è riuscito a connettere la sua mossa più devastante su ${p2Name}, chiudendo l'incontro in modo drammatico. Il pubblico è in delirio!`,
+            (p1Name, p2Name) => `L'arbitro è andato al tappeto! ${p2Name} ha tentato di usare un oggetto contundente, ma ${p1Name} ha ribaltato la situazione all'ultimo secondo, ottenendo una vittoria sporca ma cruciale!`,
+            (p1Name, p2Name) => `Incredibile dimostrazione di resistenza da parte di ${p1Name}, che ha incassato tre manovre di sottomissione da ${p2Name} prima di trovare l'energia per un Roll-up vincente!`,
+            (p1Name, p2Name) => `Un match tecnico e veloce. ${p2Name} ha provato a dominare con la Forza, ma ${p1Name}, con la sua **Velocità** fulminea, ha evitato il colpo e ha messo a segno il pin vincente.`,
+            (p1Name, p2Name) => `**Colpo di scena!** ${p1Name} sembrava spacciato, ma un guizzo di **Resistenza** gli ha permesso di uscire dalla sottomissione di ${p2Name} e ottenere il pin in contropiede.`,
+        ];
+
 
         // Stato dell'applicazione
         let player1 = null; 
         let player2 = null; 
         let currentSelectionTarget = 1; 
         const MAX_STAT = 5;
-
-        // Nuove descrizioni dell'incontro (più variabili)
-        const matchDescriptions = [
-            (p1Name, p2Name) => `Dopo una battaglia di **30 minuti** ad alta intensità, ${p1Name} è riuscito a connettere la sua mossa più devastante su ${p2Name}, chiudendo l'incontro in modo drammatico. Il pubblico è in delirio!`,
-            (p1Name, p2Name) => `L'arbitro è andato al tappeto! ${p2Name} ha tentato di usare un oggetto contundente, ma ${p1Name} ha ribaltato la situazione all'ultimo secondo, ottenendo una vittoria sporca ma cruciale!`,
-            (p1Name, p2Name) => `Incredibile dimostrazione di resistenza da parte di ${p1Name}, che ha incassato tre manovre di sottomissione da ${p2Name} prima di trovare l'energia per un Roll-up vincente!`,
-            (p1Name, p2Name) => `Un match tecnico e veloce. ${p2Name} ha provato a dominare con la Forza, ma ${p1Name}, con la sua **Velocità** fulminea, ha evitato il colpo e ha messo a segno il pin vincente.`,
-            (p1Name, p2Name) => `${p1Name} e ${p2Name} si sono dati battaglia senza esclusione di colpi. La loro **rivalità** ha raggiunto l'apice, e la vittoria è andata a ${p1Name} grazie a un inaspettato (e forse illegale) colpo basso.`,
-            (p1Name, p2Name) => `Il combattimento si è svolto principalmente fuori dal ring, una vera rissa di strada. Alla fine, ${p1Name} ha riportato ${p2Name} sul quadrato giusto in tempo per la vittoria!`,
-            (p1Name, p2Name) => `${p1Name} ha messo in mostra il suo **Carisma** unico, ipnotizzando la folla e distraendo ${p2Name} abbastanza a lungo per sferrare il colpo di grazia. Vittoria meritata!`,
-            // Nuove descrizioni
-            (p1Name, p2Name) => `**Colpo di scena!** ${p1Name} sembrava spacciato, ma un guizzo di **Resistenza** gli ha permesso di uscire dalla sottomissione di ${p2Name} e ottenere il pin in contropiede.`,
-            (p1Name, p2Name) => `Una vera e propria battaglia di **Forza** bruta! ${p2Name} ha dominato per gran parte del tempo, ma la determinazione e l'esperienza di ${p1Name} lo hanno portato alla vittoria dopo una serie di Powerbomb.`,
-            (p1Name, p2Name) => `I due si sono scambiati colpi a terra per minuti infiniti. Alla fine, ${p1Name} è riuscito ad agganciare una manovra di sottomissione letale, costringendo ${p2Name} alla resa.`,
-        ];
-
 
         // Funzione helper per generare la stringa HTML delle stelle
         function getStarRatingHtml(value, max) {
@@ -432,7 +594,7 @@
             }
         }
 
-        // Genera le miniature dei personaggi
+        // Genera le miniature dei personaggi in modo robusto
         function renderRoster() {
             const rosterGrid = document.getElementById('roster-grid');
             rosterGrid.innerHTML = ''; 
@@ -444,6 +606,13 @@
                 img.title = `Clicca per assegnare ${char.name} a P${currentSelectionTarget}`;
                 img.className = 'character-thumbnail rounded-md';
                 img.dataset.name = char.name; 
+
+                // Aggiunta gestione errore per immagini (più robusta con console.error e placeholder)
+                img.onerror = function() {
+                    console.error(`Errore nel caricamento dell'immagine esterna per: ${char.name}. Uso placeholder.`);
+                    // Placeholder garantito: visualizza le prime tre lettere del nome
+                    this.src = `https://placehold.co/80x80/293241/ffffff?text=${char.name.substring(0, 3)}`; 
+                };
 
                 img.addEventListener('click', (e) => {
                     e.preventDefault(); 
@@ -488,6 +657,7 @@
             const prefix = `p${playerNum}`;
 
             document.getElementById(`${prefix}-name`).textContent = player ? `NOME: ${player.name}` : 'NOME: ?';
+            // Aggiorna anche il ritratto grande con una logica di fallback semplice
             document.getElementById(`${prefix}-portrait`).src = player ? player.large_img_url : `https://placehold.co/256x256/1a202c/ffffff?text=P${playerNum}`;
             document.getElementById(`${prefix}-portrait`).alt = player ? player.name : `Ritratto Player ${playerNum}`;
 
@@ -527,27 +697,36 @@
         function simulateMatch() {
             if (!player1 || !player2) return;
 
-            // 1. Calcolo del Punteggio Totale Base
+            // 1. Inizializza la modale e mostra lo schermo di suspense
+            const modal = document.getElementById('result-modal');
+            const suspenseScreen = document.getElementById('suspense-screen');
+            const finalResult = document.getElementById('final-result');
+            const gifElement = document.getElementById('winner-gif');
+            
+            // Nasconde il risultato finale e mostra lo schermo di suspense
+            finalResult.classList.add('hidden', 'opacity-0');
+            suspenseScreen.classList.remove('hidden');
+            
+            // Mostra la modale (con l'animazione bounceIn sul contenuto)
+            modal.classList.remove('hidden');
+
+
+            // 2. Logica di simulazione (identica a prima)
             const p1TotalScore = Object.values(player1.stats).reduce((sum, stat) => sum + stat, 0);
             const p2TotalScore = Object.values(player2.stats).reduce((sum, stat) => sum + stat, 0);
 
-            // 2. Calcolo del Bonus (Carisma vs Svantaggio, Resistenza)
             let p1Bonus = 0;
             let p2Bonus = 0;
 
-            // Bonus Carisma (se il punteggio è basso, il carisma aiuta a recuperare)
             if (p1TotalScore < p2TotalScore && player1.stats.charisma > 3) p1Bonus += 1;
             if (p2TotalScore < p1TotalScore && player2.stats.charisma > 3) p2Bonus += 1;
 
-            // Bonus Resistenza per incontri lunghi
             if (player1.stats.stamina === MAX_STAT) p1Bonus += 1;
             if (player2.stats.stamina === MAX_STAT) p2Bonus += 1;
 
             const p1FinalScore = p1TotalScore + p1Bonus;
             const p2FinalScore = p2TotalScore + p2Bonus;
 
-            // 3. Risultato con un elemento CASUALE (più variabile)
-            // Moltiplicatore casuale tra 0.5 e 3.0
             const p1RandomMultiplier = Math.random() * 2.5 + 0.5; 
             const p2RandomMultiplier = Math.random() * 2.5 + 0.5; 
 
@@ -558,59 +737,104 @@
             let summaryText;
 
             const absoluteDifference = Math.abs(p1Chance - p2Chance);
-            
-            // Soglia del pareggio (2.5 è un buon valore per la variabilità)
             const DRAW_THRESHOLD = 2.5; 
 
             if (absoluteDifference < DRAW_THRESHOLD) {
-                // PAREGGIO
                 winner = { name: "PAREGGIO" };
                 summaryText = `I due lottatori si sono dati battaglia fino allo sfinimento! L'arbitro non ha avuto altra scelta che dichiarare un **Doppio K.O.** Nessun vincitore. Preparatevi per la rivincita!`;
-            } else if (p1Chance > p2Chance) {
-                winner = player1;
-                // Seleziona una descrizione casuale per la vittoria
-                const descFn = matchDescriptions[Math.floor(Math.random() * matchDescriptions.length)];
-                summaryText = descFn(player1.name, player2.name);
             } else {
-                winner = player2;
-                 // Seleziona una descrizione casuale per la vittoria, invertendo i nomi
-                const descFn = matchDescriptions[Math.floor(Math.random() * matchDescriptions.length)];
-                // Il nome del vincitore deve essere sempre il primo argomento per la descrizione
-                summaryText = descFn(player2.name, player1.name); 
+                const winningPlayer = p1Chance > p2Chance ? player1 : player2;
+                const losingPlayer = p1Chance > p2Chance ? player2 : player1; 
+                winner = winningPlayer;
+
+                let descriptions = specificMatchDescriptions[winner.name];
+                
+                if (!descriptions) {
+                    descriptions = genericMatchDescriptions; 
+                }
+
+                const descFn = descriptions[Math.floor(Math.random() * descriptions.length)];
+                summaryText = descFn(losingPlayer.name); 
             }
 
-            // 4. Mostra i risultati nella modal
-            showResults(winner, summaryText);
-        }
+            // 3. Preparazione della GIF e caricamento asincrono
+            let gifsToUse = genericWinnerGifs;
 
-        // Mostra la modal dei risultati con l'immagine casuale
-        function showResults(winner, summaryHtml) {
-            const modal = document.getElementById('result-modal');
-            const winnerAnnouncement = document.getElementById('winner-announcement');
-            const matchSummary = document.getElementById('match-summary');
-            const gifElement = document.getElementById('winner-gif');
+            if (winner.name === "TOMMY") { 
+                gifsToUse = tommyWinnerGifs;
+            } else if (winner.name === "CASTEL") { 
+                gifsToUse = castelWinnerGifs;
+            } else if (winner.name === "FOSCHI") {
+                gifsToUse = foschiWinnerGifs;
+            } else if (winner.name === "TASSO") {
+                gifsToUse = tassoWinnerGifs;
+            } else if (winner.name === "ASCIONE") {
+                gifsToUse = ascioneWinnerGifs;
+            } else if (winner.name === "FLAVIO") {
+                gifsToUse = flavioWinnerGifs;
+            } else if (winner.name === "ZAMPA") {
+                gifsToUse = zampaWinnerGifs;
+            } else if (winner.name === "ANGELO") {
+                gifsToUse = angeloWinnerGifs; 
+            } else if (winner.name === "STEFANO") {
+                gifsToUse = stefanoWinnerGifs; 
+            } else if (winner.name === "PAOLO") {
+                gifsToUse = paoloWinnerGifs; 
+            } else if (winner.name === "CIANI") {
+                gifsToUse = cianiWinnerGifs; 
+            } 
+
+            const randomIndex = Math.floor(Math.random() * gifsToUse.length);
+            const selectedGifUrl = gifsToUse[randomIndex];
             
-            // NUOVA LOGICA: Seleziona sempre una GIF casuale, anche in caso di pareggio.
-            const randomIndex = Math.floor(Math.random() * winnerGifs.length);
-            gifElement.src = winnerGifs[randomIndex];
+            // 4. Funzione di RIVELAZIONE (chiamata solo quando la GIF è pronta)
+            const revealResults = () => {
+                // Rimuove l'handler per evitare che si attivi due volte
+                gifElement.onload = null;
+                gifElement.onerror = null;
+
+                const winnerAnnouncement = document.getElementById('winner-announcement');
+                const matchSummary = document.getElementById('match-summary');
+
+                // Aggiorna il contenuto del risultato
+                if (winner.name === "PAREGGIO") {
+                    winnerAnnouncement.textContent = "È un PAREGGIO!";
+                    winnerAnnouncement.classList.remove('text-green-400');
+                    winnerAnnouncement.classList.add('text-yellow-400');
+                } else {
+                    winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
+                    winnerAnnouncement.classList.add('text-green-400');
+                    winnerAnnouncement.classList.remove('text-yellow-400');
+                }
+                matchSummary.innerHTML = summaryText.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
+                
+                // Nasconde lo schermo di suspense e mostra il risultato finale con fade-in
+                suspenseScreen.classList.add('hidden');
+                finalResult.classList.remove('hidden');
+                // Forza il reflow prima di applicare l'opacità, per una transizione fluida
+                void finalResult.offsetWidth; 
+                finalResult.classList.remove('opacity-0');
+            };
+
+            // 5. Imposta gli handler e avvia il caricamento
+            gifElement.onload = revealResults;
+            gifElement.onerror = () => {
+                console.error("Errore nel caricamento della GIF. Forzo la rivelazione.");
+                // Fallback: usa un placeholder e rivela i risultati immediatamente
+                gifElement.src = "https://placehold.co/300x150/1a202c/ffffff?text=GIF+Error";
+                revealResults();
+            };
+
+            // Avvia il caricamento della GIF
+            gifElement.src = selectedGifUrl;
+            gifElement.alt = `Momento saliente dell'incontro vinto da ${winner.name}`;
             
-            // 1. Aggiorna Annuncio e classi
-            if (winner.name === "PAREGGIO") {
-                winnerAnnouncement.textContent = "È un PAREGGIO!";
-                winnerAnnouncement.classList.remove('text-green-400');
-                winnerAnnouncement.classList.add('text-yellow-400');
-                // Rimuove l'opacità, visto che usiamo una GIF vera
-                gifElement.classList.remove('opacity-50'); 
-            } else {
-                winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
-                winnerAnnouncement.classList.add('text-green-400');
-                winnerAnnouncement.classList.remove('text-yellow-400');
-                gifElement.classList.remove('opacity-50');
+            // Se l'immagine è già in cache e l'onload non parte immediatamente,
+            // usiamo un breve timeout per dare tempo alla modale di apparire (opzionale, ma sicuro)
+            if (gifElement.complete && gifElement.naturalHeight !== 0) {
+                 setTimeout(revealResults, 50); // Breve ritardo per l'effetto suspense iniziale
             }
 
-            // 3. Inserisce il riassunto
-            matchSummary.innerHTML = summaryHtml.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
-            modal.classList.remove('hidden');
         }
 
         // Chiude la modal

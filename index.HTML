@@ -87,6 +87,11 @@
             border: 8px solid #E4002B; /* Bordo Rosso Vittoria */
             background-color: #111827;
         }
+        /* Stile specifico per la modal di attesa */
+        #loading-modal .modal-content {
+            border: 8px solid #3b82f6; /* Bordo Blu Attesa */
+            animation: none;
+        }
 
         @keyframes bounceIn {
             0% { transform: scale(0.5); opacity: 0; }
@@ -130,29 +135,19 @@
         /* Ajustments per P1 e P2 (solo stelle) */
         #p1-stats .flex { justify-content: space-between; }
         #p2-stats .flex { justify-content: space-between; }
-
-        /* Stile per lo spinner di caricamento */
-        .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #3b82f6; /* Blue */
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
     </style>
 </head>
 <body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
+    
+    <!-- ELEMENTO AUDIO NASCOSTO PER LA MUSICA DI SELEZIONE -->
+    <audio id="selection-music" src="https://cdn.pixabay.com/download/audio/2025/09/18/audio_74a0fc77a1.mp3?filename=boooooooooooooooooss-406678.mp3" loop></audio>
+    <!-- NUOVO ELEMENTO AUDIO NASCOSTO PER LA MUSICA DELL'INCONTRO -->
+    <audio id="match-music" src="https://cdn.pixabay.com/download/audio/2025/09/20/audio_9cfdc87744.mp3?filename=chiptune-hibride-407598.mp3" loop></audio>
 
     <div class="arcade-border w-full max-w-6xl p-6 rounded-lg">
         <h1 class="text-4xl sm:text-5xl font-bold text-center mb-6 pixel-text">DONATELLO WRESTLING MAYHEM </h1>
         <h2 class="text-xl text-gray-200 text-center mb-4">Seleziona i tuoi Campioni</h2>
-
+        
         <!-- SEZIONE DI SELEZIONE E STATISTICHE -->
         <div class="flex flex-col lg:flex-row justify-between gap-6 mb-4">
 
@@ -160,8 +155,9 @@
             <div id="p1-panel" class="lg:w-1/2 p-4 selection-box border-blue-600 border-4">
                 <div class="flex items-center mb-4 justify-between">
                     <h3 class="text-2xl text-blue-400 font-bold pixel-text">PLAYER 1</h3>
-                    <button id="p1-select-btn" onclick="setSelectionTarget(1)"
-                            class="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-blue-400">
+                    <!-- Il pulsante di selezione P1 serve solo per lo stile attivo -->
+                    <button id="p1-select-btn" disabled
+                            class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-blue-400">
                         P1
                     </button>
                 </div>
@@ -203,8 +199,9 @@
             <!-- Player 2 Panel -->
             <div id="p2-panel" class="lg:w-1/2 p-4 selection-box border-red-600 border-4">
                 <div class="flex items-center mb-4 justify-between">
-                    <button id="p2-select-btn" onclick="setSelectionTarget(2)"
-                            class="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-red-400">
+                    <!-- Il pulsante di selezione P2 serve solo per lo stile attivo -->
+                    <button id="p2-select-btn" disabled
+                            class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-sm font-bold text-white transition duration-150 border-2 border-red-400">
                         P2
                     </button>
                     <h3 class="text-2xl text-red-400 font-bold pixel-text">PLAYER 2</h3>
@@ -216,7 +213,7 @@
                         <img id="p2-portrait" class="character-portrait" src="https://placehold.co/256x256/1a202c/ffffff?text=P2" alt="Ritratto Player 2">
                     </div>
                     <!-- Statistiche P2 -->
-                    <div id="p2-stats" class="w-full sm:w-1/2 text-white text-right">
+                    <div class="w-full sm:w-1/2 text-white text-right">
                         <p class="text-xl font-bold mb-2 text-blue-400" id="p2-name">NOME: ?</p>
                         <div class="space-y-2 text-sm">
                             <!-- Forza (Solo Stelle) -->
@@ -252,11 +249,14 @@
                 SELEZIONE ATTIVA: PLAYER 1
             </p>
             
-            <!-- Pulsante Toggle -->
-            <button id="toggle-target-btn" onclick="toggleSelectionTarget()"
-                    class="px-6 py-2 mb-6 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition duration-150 uppercase border-2 border-green-400 text-sm shadow-md">
-                CAMBIA LOTTATORE (P1 ↔ P2)
-            </button>
+            <div class="flex flex-col sm:flex-row gap-4 mb-6 justify-center">
+                
+                <!-- Pulsante Mute -->
+                <button id="mute-button" onclick="toggleMusic()"
+                        class="px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-lg transition duration-150 uppercase border-2 border-purple-400 text-sm shadow-md">
+                    AVVIA MUSICA 🔊
+                </button>
+            </div>
 
             <!-- PULSANTE COMBATTI -->
             <button id="fightButton" disabled
@@ -274,43 +274,46 @@
 
     </div>
 
-    <!-- MODAL RISULTATO INCONTRO -->
+    <!-- MODAL 1: SCHERMATA MATCH IN CORSO (LOADING) -->
+    <div id="loading-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
+        <div class="modal-content p-12 max-w-lg w-full rounded-xl text-center shadow-2xl">
+            <h2 class="text-6xl font-extrabold text-blue-400 mb-6 pixel-text animate-pulse">
+                MATCH IN CORSO...
+            </h2>
+            <!-- GIF WWE AGGIUNTA QUI -->
+            <img src="https://media.tenor.com/4DQaO5KTUrYAAAAj/wwe-logo.gif" 
+                 alt="WWE Logo Loading" 
+                 class="w-32 h-32 mx-auto my-6 object-contain">
+            
+            <p class="text-xl text-white mt-4">Preparati alla distruzione!</p>
+            <!-- Lo spinner è stato rimosso in favore della GIF/GIF+testo -->
+        </div>
+    </div>
+
+
+    <!-- MODAL 2: RISULTATO INCONTRO (WINNER) -->
     <div id="result-modal" class="modal fixed inset-0 flex items-center justify-center hidden">
-        <div id="modal-content" class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
+        <div class="modal-content p-8 max-w-lg w-full rounded-xl text-center shadow-2xl">
+            <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
             
-            <!-- 1. SCHERMO DI SUSPENSE (Mostrato per primo) -->
-            <div id="suspense-screen" class="flex flex-col items-center justify-center p-8 text-white">
-                <div class="loader mb-6"></div>
-                <h2 class="text-3xl font-extrabold text-red-400 mb-2 pixel-text animate-pulse">MATCH IN CORSO!</h2>
-                <p class="text-xl text-yellow-300 pixel-text">L'arbitro sta decidendo...</p>
-                <p class="text-sm mt-4 text-gray-400">Preparati per il pin vincente!</p>
-            </div>
-            
-            <!-- 2. RISULTATO FINALE (Mostrato solo quando la GIF è pronta) -->
-            <div id="final-result" class="hidden opacity-0 transition-opacity duration-500">
-                <h2 class="text-5xl font-extrabold text-yellow-400 mb-4 pixel-text">RISULTATO!</h2>
-                
-                <!-- Placeholder per l'immagine GIF (solo per pre-caricamento, non visibile subito) -->
-                <!-- La classe opacity-0 è gestita dal parent #final-result -->
-                <img id="winner-gif" class="w-full max-w-xs mx-auto my-4 rounded-lg shadow-xl" src="" alt="Momento saliente dell'incontro">
+            <!-- Placeholder per l'immagine GIF -->
+            <img id="winner-gif" class="w-full max-w-xs mx-auto my-4 rounded-lg shadow-xl" alt="Momento saliente dell'incontro" src="https://placehold.co/300x150/1a202c/ffffff?text=GIF">
 
-                <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
-                    <!-- Riepilogo dell'incontro -->
-                </div>
-                <p id="winner-announcement" class="text-3xl font-bold mb-8 text-green-400 uppercase pixel-text">
-                    <!-- Annuncio del vincitore -->
-                </p>
-                <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-150">
-                    Torna al Selettore
-                </button>
+            <div id="match-summary" class="text-white text-lg mb-6 leading-relaxed">
+                <!-- Riepilogo dell'incontro -->
             </div>
-
+            <p id="winner-announcement" class="text-3xl font-bold mb-8 text-green-400 uppercase pixel-text">
+                <!-- Annuncio del vincitore -->
+            </p>
+            <button onclick="closeModal()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-150">
+                Torna al Selettore
+            </button>
         </div>
     </div>
 
 
     <script>
-        // Array di oggetti per i personaggi del roster
+        // Array di oggetti per i personaggi del roster (omesso per brevità, non modificato)
         const roster = [
             {
                 name: "FLAVIO",
@@ -377,12 +380,10 @@
                 small_img_url: "https://i.imgur.com/Pfx4ycR.jpeg",
                 large_img_url: "https://cdn.pixabay.com/animation/2025/12/06/15/48/15-48-55-570_256.gif",
                 stats: { strength: 4, speed: 2, stamina: 2, charisma: 4 }
-            }, 
+            }
         ];
 
-        // --- Lista di GIF per i Lottatori ---
-        
-        // GIF generiche (per Pareggi o lottatori non specificati)
+        // Liste GIF e Descrizioni (omesse per brevità, non modificate)
         const genericWinnerGifs = [
             "https://media.tenor.com/S-24Aapm_74AAAAM/big-show-paul-donald-wight-ii.gif",
             "https://media.tenor.com/esyQV4buNV4AAAAM/austin-theory-stone-cold.gif",
@@ -397,50 +398,48 @@
             "https://media.tenor.com/k681dBpXlBcAAAA1/goldberg-gunther.webp",
             "https://media.tenor.com/lGgvHfHsndEAAAAM/goldberg-jackhammer.gif",
             "https://media.tenor.com/r_HjtnG3VnAAAAAM/goldberg-spear.gif",
-            "https://media.tenor.com/b-sMu_fiBXsAAAAM/goldberg-spear.gif",
+            "https://media.tenor.com/b-sMu_fiBXsAAAAM/goldberg-spear.gif"
         ];
         
-        // GIF specifiche per la vittoria di Tommy (tema AJ Styles)
         const tommyWinnerGifs = [
             "https://media1.tenor.com/m/4GVgj5QoTvwAAAAd/wwe-aj-styles.gif",
             "https://media1.tenor.com/m/9uGlZEzxXuAAAAAd/aj-styles-wwe.gif",
             "https://media1.tenor.com/m/C9PEvV0BQcAAAAAd/aj-styles-wwe-aj-styles.gif",
             "https://media1.tenor.com/m/PqOQqYOZqG8AAAAd/wwe-aj-styles.gif",
-            "https://media1.tenor.com/m/QrDufB70N7cAAAAd/aj-styles-styles-clash.gif",
+            "https://media1.tenor.com/m/QrDufB70N7cAAAAd/aj-styles-styles-clash.gif"
         ];
-
-        // GIF specifiche (altri lottatori)
+        
         const ascioneWinnerGifs = [ 
             "https://media1.tenor.com/m/VbQo4-uQIK4AAAAd/big-show-entrance.gif",
             "https://media1.tenor.com/m/-RUGRztc2qoAAAAd/wwe-world-wrestling-entertainment.gif",
             "https://media1.tenor.com/m/1-i1-EbI4IMAAAAd/matt-jackson-young-bucks.gif",
-            "https://media1.tenor.com/m/6JaDLIKzOJkAAAAd/show-bar-cesaro.gif",
+            "https://media1.tenor.com/m/6JaDLIKzOJkAAAAd/show-bar-cesaro.gif"
         ];
         const flavioWinnerGifs = [ 
             "https://media1.tenor.com/m/GZlSCVfe92QAAAAd/jbl-john-bradshaw-layfield.gif",
             "https://media1.tenor.com/m/DFKDx5PGkTsAAAAd/john-bradshaw-layfield-jbl.gif",
             "https://media1.tenor.com/m/x2R3uH2g0_AAAAAd/wrestling-wwe.gif",
             "https://media1.tenor.com/m/wnPUhLzlzqQAAAAd/john-bradshaw-layfield-jbl.gif",
-            "https://media1.tenor.com/m/__tT1hXLigcAAAAd/jbl-entrance.gif",
+            "https://media1.tenor.com/m/__tT1hXLigcAAAAd/jbl-entrance.gif"
         ];
         const zampaWinnerGifs = [ 
             "https://media1.tenor.com/m/ZsLd5yyNxoIAAAAd/the-undertaker-aj-styles.gif",
             "https://media1.tenor.com/m/hxiyT3JPRacAAAAd/wwe-wwe-smackdown.gif",
             "https://media1.tenor.com/m/P-BllVEAlfkAAAAd/the-undertaker-aj-styles.gif",
             "https://media1.tenor.com/m/hRt025P0HIMAAAAd/waking-up-anger.gif",
-            "https://media1.tenor.com/m/xpk-IHT-t7QAAAAd/the-undertaker-chokeslam.gif",
+            "https://media1.tenor.com/m/xpk-IHT-t7QAAAAd/the-undertaker-chokeslam.gif"
         ];
         const angeloWinnerGifs = [ 
             "https://media1.tenor.com/m/TuA_OwJ1BdMAAAAd/eddie-guerrero-frog-splash.gif",
             "https://media1.tenor.com/m/XuJec8SKucwAAAAC/eddie-guerrero-wwe.gif",
             "https://media1.tenor.com/m/dA7UEt2yF1EAAAAd/eddie-guerrero-frog-splash.gif",
-            "https://media1.tenor.com/m/64eM-DGLe_oAAAAd/eddie-guerrero-wwe.gif",
+            "https://media1.tenor.com/m/64eM-DGLe_oAAAAd/eddie-guerrero-wwe.gif"
         ];
         const stefanoWinnerGifs = [ 
             "https://media1.tenor.com/m/OWhl9TvSqAIAAAAd/randy-orton-pose.gif",
             "https://media1.tenor.com/m/l2jvj-O7CMUAAAAd/randy-orton-rko.gif",
             "https://media1.tenor.com/m/k8EI7tNpVUMAAAAd/rko-wwe.gif",
-            "https://media1.tenor.com/m/EKyHlha2SdcAAAAd/randy-orton-pose.gif",
+            "https://media1.tenor.com/m/EKyHlha2SdcAAAAd/randy-orton-pose.gif"
         ];
         const paoloWinnerGifs = [ 
             "https://media1.tenor.com/m/g2-pIL6irMQAAAAd/stone-cold-steve-austin.gif",
@@ -448,14 +447,14 @@
             "https://media1.tenor.com/m/35hZ83zKFesAAAAd/stone-cold-steve-austin-entrance.gif",
             "https://media1.tenor.com/m/8uBc_KLcnloAAAAd/stone-cold-steve-austin-chairshot.gif",
             "https://media1.tenor.com/m/esyQV4buNV4AAAAd/austin-theory-stone-cold.gif",
-            "https://media1.tenor.com/m/jg1yipA4-jIAAAAd/stone-cold-steve-austin-beer-bash.gif",
+            "https://media1.tenor.com/m/jg1yipA4-jIAAAAd/stone-cold-steve-austin-beer-bash.gif"
         ];
         const cianiWinnerGifs = [ 
             "https://media1.tenor.com/m/mD_XPfPW7goAAAAd/mick-foley-entrance.gif",
             "https://media1.tenor.com/m/usbxRbC88lIAAAAd/edge-spear.gif",
             "https://media1.tenor.com/m/TY6Wr7-jM6QAAAAd/dudelove-dude.gif",
             "https://media1.tenor.com/m/7ZjInbcpTbgAAAAd/mick-foley-elbow-drop.gif",
-            "https://media1.tenor.com/m/g0Qp5zQMZFAAAAAd/mick-foley-barbed-wire-baseball-bat.gif",
+            "https://media1.tenor.com/m/g0Qp5zQMZFAAAAAd/mick-foley-barbed-wire-baseball-bat.gif"
         ];
         const tassoWinnerGifs = [ 
             "https://media1.tenor.com/m/EHNYe49VqJYAAAAd/chris-benoit-german-suplex.gif",
@@ -466,16 +465,16 @@
             "https://media1.tenor.com/m/cFgcx9JpKmoAAAAd/chris-benoit-wwe.gif",
             "https://media1.tenor.com/m/ya9NkgY5BIQAAAAd/chris-benoit-pushups.gif",
             "https://media1.tenor.com/m/wQwUPYixHCMAAAAd/chris-benoit-diving-headbutt.gif",
-            "https://media1.tenor.com/m/QrptYWHjOJUAAAAd/chris-benoit-crippler-crossface.gif",
+            "https://media1.tenor.com/m/QrptYWHjOJUAAAAd/chris-benoit-crippler-crossface.gif"
         ];
         const foschiWinnerGifs = [ 
             "https://media1.tenor.com/m/qrN0wwCzhicAAAAd/daniel-bryan-yes.gif",
             "https://media1.tenor.com/m/TcsXPXvzWhgAAAAd/daniel-bryan-yes-lock.gif",
             "https://media1.tenor.com/m/Yho2FcmSDN8AAAAd/daniel-bryan-bryan-danielson.gif",
-            "https://media1.tenor.com/m/cL841OZY-SMAAAAAd/daniel-bryan-yes-kick.gif",
-            "https://media1.tenor.com/m/tQTm41p1gqQAAAAd/daniel-bryan-yes-kick.gif",
+            "https://media1.tenor.com/m/cL841OZY-SMAAAAd/daniel-bryan-yes-kick.gif",
+            "https://media1.tenor.com/m/tQTm41p1gqQAAAAd/daniel-bryan-running-knee.gif",
             "https://media1.tenor.com/m/DLbIM6a37d0AAAAd/daniel-bryan-running-knee.gif",
-            "https://media1.tenor.com/m/sERkLPRkKUkAAAAd/daniel-bryan-stomps.gif",
+            "https://media1.tenor.com/m/sERkLPRkKUkAAAAd/daniel-bryan-stomps.gif"
         ];
         const castelWinnerGifs = [ 
             "https://media1.tenor.com/m/IYvoYX4QVzIAAAAd/bret-hart-wwf-champion.gif",
@@ -484,60 +483,58 @@
             "https://media1.tenor.com/m/F44lh1Hiz4EAAAAd/bret-hart-superplex.gif",
             "https://media1.tenor.com/m/vECGEuhBxzQAAAAd/bret-hart-bret-the-hitman-hart.gif",
             "https://media1.tenor.com/m/CUfBMYBbyS4AAAAd/bret-hart-clothesline.gif",
-            "https://media1.tenor.com/m/dEPOdvVfRLQAAAAd/bret-hart-piledriver.gif",
+            "https://media1.tenor.com/m/dEPOdvVfRLQAAAAd/bret-hart-piledriver.gif"
         ];
-
-        // --- Descrizioni degli Incontri ---
-
-        // Descrizioni specifiche basate sul vincitore (Aggiunte in base all'abbinamento)
+        
+        // --- Descrizioni degli Incontri (omesse per brevità, non modificate) ---
         const specificMatchDescriptions = {
-            "FLAVIO": [ // Ispirazione: JBL (Ricco Bullo)
+            "FLAVIO": [ 
                 (opponent) => `La folla ha urlato mentre **FLAVIO** caricava la sua devastante **Clothesline From Hell**! ${opponent} non ha avuto scampo contro la potenza del "Texas Millionaire". È un K.O. dominato dalla Forza.`,
                 (opponent) => `Flavio, con un atteggiamento arrogante da bullo ricco, ha colpito ${opponent} con una Powerbomb prima di umiliarlo con una serie di schiaffi. Vittoria prepotente e sporca per il "Big Man".`
             ],
-            "TASSO": [ // Ispirazione: Chris Benoit (Tecnico Aggressivo)
+            "TASSO": [ 
                 (opponent) => `**TASSO** ha dominato l'incontro con una serie di **German Suplexes** che hanno scosso il ring! L'aggressività del "Wolverine" ha costretto ${opponent} al tappeto, aprendo la strada al pin vincente.`,
                 (opponent) => `In un finale tecnico, Tasso ha intrappolato ${opponent} nella sua micidiale **Crippler Crossface**! ${opponent} ha provato a resistere, ma l'agonismo e la precisione del "Cannibale" lo hanno costretto alla resa.`
             ],
-            "CASTEL": [ // Ispirazione: Bret Hart (Tecnico Perfetto)
+            "CASTEL": [ 
                 (opponent) => `La battaglia tecnica è finita quando **CASTEL** ha rovesciato ${opponent} nella sua famigerata sottomissione, la **Sharpshooter**! ${opponent} non ha potuto far altro che battere la mano in segno di resa.`,
                 (opponent) => `Dimostrazione di precisione: Castel ha colpito ${opponent} con una serie di colpi puliti e ha finalizzato l'incontro con un "Piledriver" perfetto, cementando il suo status di "Hitman".`
             ],
-            "STEFANO": [ // Ispirazione: Randy Orton (La Vipera)
+            "STEFANO": [ 
                 (opponent) => `**RKO! RKO! RKO!** Stefano ha messo a segno la sua manovra finale **dal nulla**, cogliendo ${opponent} completamente di sorpresa. La "Vipera" non ha dato scampo.`,
                 (opponent) => `Dopo aver dominato l'incontro con movimenti lenti e calcolati, Stefano ha sferrato il suo micidiale **Punt Kick**! ${opponent} è rimasto a terra in stato confusionale. L'arbitro ha fermato l'incontro.`
             ],
-            "FOSCHI": [ // Ispirazione: Daniel Bryan (YES! Movement)
+            "FOSCHI": [ 
                 (opponent) => `Tutto il pubblico ha scandito "**YES! YES! YES!**" mentre **FOSCHI** chiudeva l'incontro con una fulminea **Running Knee**! L'energia della folla ha alimentato la sua vittoria.`,
                 (opponent) => `Foschi ha intrappolato ${opponent} nella sua micidiale **Yes Lock**! La pressione sul collo e sulla spalla era troppo forte. ${opponent} ha ceduto, e il "Capitano del Yes Movement" ha trionfato.`
             ],
-            "PAOLO": [ // Ispirazione: Stone Cold Steve Austin (Ribelle Bevitore di Birra)
-                (opponent) => `**PAOLO** ha evitato un attacco e ha eseguito la sua mossa più iconica: una devastante **Stone Cold Stunner**! ${opponent} è rimasto al tappeto, stordito, mentre Paolo festeggiava con una birra.`,
+            "PAOLO": [ 
+                (opponent) => `**PAOLO** ha evitato un attacco e ha eseguito la sua manovra finale **dal nulla**, cogliendo ${opponent} completamente di sorpresa. La "Vipera" non ha dato scampo.`,
+                (opponent) => `**PAOLO** ha evitato un attacco e ha eseguito la sua manovra finale **dal nulla**, cogliendo ${opponent} completamente di sorpresa. La "Vipera" non ha dato scampo.`,
                 (opponent) => `Il "Texas Rattlesnake" Paolo ha dominato ${opponent} a suon di pugni e colpi proibiti. Dopo aver spaccato una sedia sull'avversario, ha chiuso il match con il pin, senza curarsi delle regole. *E quello è l'bottom line!*`
             ],
-            "ZAMPA": [ // Ispirazione: The Undertaker (Deadman)
+            "ZAMPA": [ 
                 (opponent) => `Le luci si sono spente e **ZAMPA** è riapparso dietro ${opponent}! La sua **Chokeslam** ha squarciato il ring! ${opponent} è stato poi sepolto con la micidiale **Tombstone Piledriver**.`,
                 (opponent) => `L'incontro è stato un lungo e oscuro massacro, con Zampa che ha incassato colpi apparentemente letali. L'essere soprannaturale si è rialzato al conteggio di 2 e ha chiuso la pratica con un **Last Ride** terrificante.`
             ],
-            "TOMMY": [ // Ispirazione: AJ Styles (Phenomenal)
+            "TOMMY": [ 
                 (opponent) => `È stato un duello **Phenomenal**! **TOMMY** ha messo a segno la **Styles Clash** dopo una rapida serie di manovre aeree. ${opponent} era troppo stordito per reagire!`,
                 (opponent) => `Incredibile: Tommy ha spiccato il volo e ha colpito ${opponent} con la **Phenomenal Forearm**! Un colpo aereo di precisione chirurgica che ha messo fine all'incontro. Il "Phenomenal One" vince!`
             ],
-            "ASCIONE": [ // Ispirazione: Big Show (Il Gigante)
+            "ASCIONE": [ 
                 (opponent) => `Il gigante **ASCIONE** ha resistito a tutto e ha messo fine all'incontro con un singolo, devastante **Knockout Punch**! ${opponent} è crollato come un sacco di patate.`,
                 (opponent) => `Ascione ha usato la sua mole per dominare ${opponent}. Dopo una serie di Body Slam, ha sollevato ${opponent} e lo ha scaraventato al tappeto con una **Chokeslam** imparabile.`
             ],
-            "CIANI": [ // Ispirazione: Mick Foley / Edge (Hardcore)
+            "CIANI": [ 
                 (opponent) => `**CIANI** ha tirato fuori da sotto il ring una mazza avvolta nel filo spinato! L'arbitro ha protestato, ma Ciani ha sferrato il colpo decisivo per il pin vincente. Caos totale!`,
                 (opponent) => `Con la **Spear** a tutta velocità, Ciani ha diviso in due ${opponent}, chiudendo l'incontro in pochi secondi. L'aggressività e la sconsideratezza di Ciani lo hanno portato alla vittoria.`
             ],
-            "ANGELO": [ // Ispirazione: Eddie Guerrero (Latino Heat)
-                (opponent) => `**ANGELO** ha mostrato il suo "Latino Heat" e ha rubato la vittoria dopo un astuto stratagemma! Una volta che l'arbitro è stato distratto, ha messo a segno la sua **Frog Splash** perfetta.`,
+            "ANGELO": [ 
+                (opponent) => `**ANGELO** ha mostrato il suo "Latino Heat" e ha rubato la vittoria dopo un astuto stratagemma! Una volta che l'arbitro è stato distratto, ha messo a segno la **Frog Splash** perfetta.`,
                 (opponent) => `L'incontro si è concluso con l'inganno. Angelo ha finto di essere infortunato, distraendo ${opponent}, per poi cogliere l'occasione e chiudere con un **Roll-up** rapido e vincente. *¡Viva la Raza!*`
             ]
         };
 
-        // Descrizioni generiche (usate per pareggi o come fallback)
         const genericMatchDescriptions = [
             (p1Name, p2Name) => `Dopo una battaglia di **30 minuti** ad alta intensità, ${p1Name} è riuscito a connettere la sua mossa più devastante su ${p2Name}, chiudendo l'incontro in modo drammatico. Il pubblico è in delirio!`,
             (p1Name, p2Name) => `L'arbitro è andato al tappeto! ${p2Name} ha tentato di usare un oggetto contundente, ma ${p1Name} ha ribaltato la situazione all'ultimo secondo, ottenendo una vittoria sporca ma cruciale!`,
@@ -546,14 +543,18 @@
             (p1Name, p2Name) => `**Colpo di scena!** ${p1Name} sembrava spacciato, ma un guizzo di **Resistenza** gli ha permesso di uscire dalla sottomissione di ${p2Name} e ottenere il pin in contropiede.`,
         ];
 
-
         // Stato dell'applicazione
         let player1 = null; 
         let player2 = null; 
         let currentSelectionTarget = 1; 
         const MAX_STAT = 5;
 
-        // Funzione helper per generare la stringa HTML delle stelle
+        // Variabile per tenere traccia dello stato globale della musica (ON/OFF)
+        let isMusicPlaying = false; 
+        // TEMPO DI ATTESA RIDOTTO A 3 SECONDI
+        const MINIMUM_DELAY_MS = 3000; 
+
+        // Funzione helper per generare la stringa HTML delle stelle (omessa per brevità, non modificata)
         function getStarRatingHtml(value, max) {
             const filledStar = '★'; 
             const emptyStar = '☆'; 
@@ -564,16 +565,59 @@
             return html;
         }
         
-        // Alterna il target di selezione
-        function toggleSelectionTarget() {
-            currentSelectionTarget = currentSelectionTarget === 1 ? 2 : 1;
-            updatePlayerSelectorDisplay();
+        // NUOVA FUNZIONE: Avvia la musica di selezione se non è già in riproduzione
+        function startSelectionMusicIfMuted() {
+            const selectionMusic = document.getElementById('selection-music');
+            const muteButton = document.getElementById('mute-button');
+            
+            if (!isMusicPlaying) {
+                selectionMusic.volume = 0.4;
+                selectionMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    muteButton.textContent = 'SPEGNI MUSICA 🔇';
+                }).catch(error => {
+                    console.error("Riproduzione audio fallita.", error);
+                    // In caso di errore, il pulsante rimane su AVVIA, lo stato rimane false
+                    muteButton.textContent = 'AVVIA MUSICA 🔊'; 
+                });
+            }
         }
+        
+        // FUNZIONE PER AVVIARE/SPEGNERE LA MUSICA (USATA SOLO DAL PULSANTE)
+        function toggleMusic() {
+            const selectionMusic = document.getElementById('selection-music');
+            const matchMusic = document.getElementById('match-music');
+            const muteButton = document.getElementById('mute-button');
+            
+            // Se la musica è ON, spegni tutto e aggiorna lo stato
+            if (isMusicPlaying) {
+                selectionMusic.pause();
+                matchMusic.pause();
+                isMusicPlaying = false;
+                muteButton.textContent = 'AVVIA MUSICA 🔊';
+            } else {
+                // Se la musica è OFF, usa la funzione per avviarla (solo se spenta dal pulsante)
+                startSelectionMusicIfMuted();
+            }
+        }
+        
+        // Funzione per cambiare la traccia audio in base alla fase del gioco
+        function switchMusic(phase) {
+            const selectionMusic = document.getElementById('selection-music');
+            const matchMusic = document.getElementById('match-music');
+            
+            // Se la musica è stata spenta dall'utente (isMusicPlaying=false), non facciamo nulla.
+            if (!isMusicPlaying) return; 
 
-        // Imposta il Player attualmente selezionato
-        function setSelectionTarget(playerNum) {
-            currentSelectionTarget = playerNum;
-            updatePlayerSelectorDisplay();
+            if (phase === 'match') {
+                selectionMusic.pause();
+                matchMusic.volume = 0.4;
+                matchMusic.play().catch(e => console.error("Errore nell'avvio della musica dell'incontro:", e));
+            } else if (phase === 'selection') {
+                matchMusic.pause();
+                selectionMusic.volume = 0.4;
+                selectionMusic.play().catch(e => console.error("Errore nell'avvio della musica di selezione:", e));
+            }
         }
 
         // Aggiorna l'indicatore di selezione P1/P2
@@ -582,19 +626,23 @@
             const p2Btn = document.getElementById('p2-select-btn');
             const statusText = document.getElementById('selection-status');
 
-            p1Btn.classList.remove('player-selector-active');
-            p2Btn.classList.remove('player-selector-active');
-
+            // Rimuovi la classe attiva da entrambi
+            p1Btn.classList.remove('player-selector-active', 'border-yellow-400');
+            p2Btn.classList.remove('player-selector-active', 'border-yellow-400');
+            
+            // Applica la classe attiva al target corrente
             if (currentSelectionTarget === 1) {
                 p1Btn.classList.add('player-selector-active');
                 statusText.textContent = 'SELEZIONE ATTIVA: PLAYER 1';
+                p1Btn.classList.add('border-yellow-400'); // Evidenzia il pulsante P1
             } else {
                 p2Btn.classList.add('player-selector-active');
                 statusText.textContent = 'SELEZIONE ATTIVA: PLAYER 2';
+                p2Btn.classList.add('border-yellow-400'); // Evidenzia il pulsante P2
             }
         }
 
-        // Genera le miniature dei personaggi in modo robusto
+        // Genera le miniature dei personaggi (omessa per brevità, non modificata)
         function renderRoster() {
             const rosterGrid = document.getElementById('roster-grid');
             rosterGrid.innerHTML = ''; 
@@ -607,16 +655,14 @@
                 img.className = 'character-thumbnail rounded-md';
                 img.dataset.name = char.name; 
 
-                // Aggiunta gestione errore per immagini (più robusta con console.error e placeholder)
                 img.onerror = function() {
                     console.error(`Errore nel caricamento dell'immagine esterna per: ${char.name}. Uso placeholder.`);
-                    // Placeholder garantito: visualizza le prime tre lettere del nome
                     this.src = `https://placehold.co/80x80/293241/ffffff?text=${char.name.substring(0, 3)}`; 
                 };
 
                 img.addEventListener('click', (e) => {
                     e.preventDefault(); 
-                    selectCharacter(char, currentSelectionTarget);
+                    selectCharacter(char); // Non passiamo più currentSelectionTarget
                 });
                 
                 img.addEventListener('contextmenu', (e) => {
@@ -627,37 +673,40 @@
             });
         }
 
-        // Seleziona un personaggio
-        function selectCharacter(char, playerNum) {
+        // Seleziona un personaggio (LOGICA MODIFICATA per alternanza automatica)
+        function selectCharacter(char) {
+            const playerNum = currentSelectionTarget;
+
             if (playerNum === 1) {
+                // Se P1 seleziona lo stesso di P2, deseleziona P2
                 if (player2 && player2.name === char.name) {
                     player2 = null;
                     updatePlayerDisplay(2);
                 }
                 player1 = char;
+                currentSelectionTarget = 2; // Passa a P2 per la prossima selezione
             } else { // playerNum === 2
+                // Se P2 seleziona lo stesso di P1, deseleziona P1
                 if (player1 && player1.name === char.name) {
                     player1 = null;
                     updatePlayerDisplay(1);
                 }
                 player2 = char;
+                currentSelectionTarget = 1; // Passa a P1 per la prossima selezione
             }
 
             updatePlayerDisplay(playerNum);
             updateThumbnails();
             checkFightReadiness();
-            
-            // Passa automaticamente all'altro giocatore
-            toggleSelectionTarget();
+            updatePlayerSelectorDisplay(); // Aggiorna la visualizzazione dopo l'alternanza
         }
 
-        // Aggiorna l'interfaccia di un giocatore
+        // Aggiorna l'interfaccia di un giocatore (omessa per brevità, non modificata)
         function updatePlayerDisplay(playerNum) {
             const player = playerNum === 1 ? player1 : player2;
             const prefix = `p${playerNum}`;
 
             document.getElementById(`${prefix}-name`).textContent = player ? `NOME: ${player.name}` : 'NOME: ?';
-            // Aggiorna anche il ritratto grande con una logica di fallback semplice
             document.getElementById(`${prefix}-portrait`).src = player ? player.large_img_url : `https://placehold.co/256x256/1a202c/ffffff?text=P${playerNum}`;
             document.getElementById(`${prefix}-portrait`).alt = player ? player.name : `Ritratto Player ${playerNum}`;
 
@@ -672,7 +721,7 @@
             });
         }
 
-        // Aggiorna i bordi delle miniature
+        // Aggiorna i bordi delle miniature (omessa per brevità, non modificata)
         function updateThumbnails() {
             document.querySelectorAll('.character-thumbnail').forEach(img => {
                 img.classList.remove('selected-p1', 'selected-p2');
@@ -686,32 +735,27 @@
             });
         }
 
-        // Abilita il pulsante "COMBATTI"
+        // Abilita il pulsante "COMBATTI" (omessa per brevità, non modificata)
         function checkFightReadiness() {
             const fightButton = document.getElementById('fightButton');
             fightButton.disabled = !(player1 && player2); 
             fightButton.textContent = (player1 && player2) ? `COMBATTI ${player1.name} VS ${player2.name}` : 'SELEZIONA ENTRAMBI I LOTTATORI';
         }
 
-        // Funzione di simulazione aggiornata
+        // Funzione di simulazione aggiornata con il delay
         function simulateMatch() {
             if (!player1 || !player2) return;
 
-            // 1. Inizializza la modale e mostra lo schermo di suspense
-            const modal = document.getElementById('result-modal');
-            const suspenseScreen = document.getElementById('suspense-screen');
-            const finalResult = document.getElementById('final-result');
-            const gifElement = document.getElementById('winner-gif');
-            
-            // Nasconde il risultato finale e mostra lo schermo di suspense
-            finalResult.classList.add('hidden', 'opacity-0');
-            suspenseScreen.classList.remove('hidden');
-            
-            // Mostra la modale (con l'animazione bounceIn sul contenuto)
-            modal.classList.remove('hidden');
+            // 1. Disabilita il pulsante per evitare clic multipli
+            document.getElementById('fightButton').disabled = true;
 
+            // 2. Ferma la musica di selezione e avvia quella dell'incontro
+            switchMusic('match'); 
 
-            // 2. Logica di simulazione (identica a prima)
+            // 3. Mostra la modal di caricamento
+            document.getElementById('loading-modal').classList.remove('hidden');
+
+            // 4. Calcola il risultato (la logica di calcolo non richiede ritardi)
             const p1TotalScore = Object.values(player1.stats).reduce((sum, stat) => sum + stat, 0);
             const p2TotalScore = Object.values(player2.stats).reduce((sum, stat) => sum + stat, 0);
 
@@ -731,7 +775,7 @@
             const p2RandomMultiplier = Math.random() * 2.5 + 0.5; 
 
             const p1Chance = p1FinalScore * p1RandomMultiplier;
-            const p2Chance = p2FinalScore * p2RandomMultiplier;
+            const p2Chance = p2FinalScore * p2RandomMultiplier; 
 
             let winner = null;
             let summaryText;
@@ -743,7 +787,7 @@
                 winner = { name: "PAREGGIO" };
                 summaryText = `I due lottatori si sono dati battaglia fino allo sfinimento! L'arbitro non ha avuto altra scelta che dichiarare un **Doppio K.O.** Nessun vincitore. Preparatevi per la rivincita!`;
             } else {
-                const winningPlayer = p1Chance > p2Chance ? player1 : player2;
+                const winningPlayer = p1Chance > p2Chance ? player1 : player2; 
                 const losingPlayer = p1Chance > p2Chance ? player2 : player1; 
                 winner = winningPlayer;
 
@@ -757,7 +801,24 @@
                 summaryText = descFn(losingPlayer.name); 
             }
 
-            // 3. Preparazione della GIF e caricamento asincrono
+            // 5. Applica il ritardo (ORA 3000ms) prima di mostrare il risultato finale
+            setTimeout(() => {
+                // Nascondi la modal di caricamento
+                document.getElementById('loading-modal').classList.add('hidden');
+                // Mostra i risultati
+                showResults(winner, summaryText);
+                // Riabilita il pulsante (Viene riabilitato in closeModal, ma lo lasciamo qui per sicurezza)
+                checkFightReadiness();
+            }, MINIMUM_DELAY_MS);
+        }
+
+        // Mostra la modal dei risultati con l'immagine casuale (omessa per brevità, non modificata)
+        function showResults(winner, summaryHtml) {
+            const modal = document.getElementById('result-modal');
+            const winnerAnnouncement = document.getElementById('winner-announcement');
+            const matchSummary = document.getElementById('match-summary');
+            const gifElement = document.getElementById('winner-gif');
+            
             let gifsToUse = genericWinnerGifs;
 
             if (winner.name === "TOMMY") { 
@@ -785,61 +846,37 @@
             } 
 
             const randomIndex = Math.floor(Math.random() * gifsToUse.length);
-            const selectedGifUrl = gifsToUse[randomIndex];
+            gifElement.src = gifsToUse[randomIndex];
             
-            // 4. Funzione di RIVELAZIONE (chiamata solo quando la GIF è pronta)
-            const revealResults = () => {
-                // Rimuove l'handler per evitare che si attivi due volte
-                gifElement.onload = null;
-                gifElement.onerror = null;
-
-                const winnerAnnouncement = document.getElementById('winner-announcement');
-                const matchSummary = document.getElementById('match-summary');
-
-                // Aggiorna il contenuto del risultato
-                if (winner.name === "PAREGGIO") {
-                    winnerAnnouncement.textContent = "È un PAREGGIO!";
-                    winnerAnnouncement.classList.remove('text-green-400');
-                    winnerAnnouncement.classList.add('text-yellow-400');
-                } else {
-                    winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
-                    winnerAnnouncement.classList.add('text-green-400');
-                    winnerAnnouncement.classList.remove('text-yellow-400');
-                }
-                matchSummary.innerHTML = summaryText.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
-                
-                // Nasconde lo schermo di suspense e mostra il risultato finale con fade-in
-                suspenseScreen.classList.add('hidden');
-                finalResult.classList.remove('hidden');
-                // Forza il reflow prima di applicare l'opacità, per una transizione fluida
-                void finalResult.offsetWidth; 
-                finalResult.classList.remove('opacity-0');
-            };
-
-            // 5. Imposta gli handler e avvia il caricamento
-            gifElement.onload = revealResults;
-            gifElement.onerror = () => {
-                console.error("Errore nel caricamento della GIF. Forzo la rivelazione.");
-                // Fallback: usa un placeholder e rivela i risultati immediatamente
-                gifElement.src = "https://placehold.co/300x150/1a202c/ffffff?text=GIF+Error";
-                revealResults();
-            };
-
-            // Avvia il caricamento della GIF
-            gifElement.src = selectedGifUrl;
-            gifElement.alt = `Momento saliente dell'incontro vinto da ${winner.name}`;
-            
-            // Se l'immagine è già in cache e l'onload non parte immediatamente,
-            // usiamo un breve timeout per dare tempo alla modale di apparire (opzionale, ma sicuro)
-            if (gifElement.complete && gifElement.naturalHeight !== 0) {
-                 setTimeout(revealResults, 50); // Breve ritardo per l'effetto suspense iniziale
+            if (winner.name === "PAREGGIO") {
+                winnerAnnouncement.textContent = "È un PAREGGIO!";
+                winnerAnnouncement.classList.remove('text-green-400');
+                winnerAnnouncement.classList.add('text-yellow-400');
+                gifElement.classList.remove('opacity-50'); 
+            } else {
+                winnerAnnouncement.textContent = `IL VINCITORE È ${winner.name}!`;
+                winnerAnnouncement.classList.add('text-green-400');
+                winnerAnnouncement.classList.remove('text-yellow-400');
+                gifElement.classList.remove('opacity-50');
             }
 
+            matchSummary.innerHTML = summaryHtml.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-yellow-300">$1</span>');
+            modal.classList.remove('hidden');
         }
 
         // Chiude la modal
         function closeModal() {
             document.getElementById('result-modal').classList.add('hidden');
+            // Riabilita il pulsante Combatti
+            checkFightReadiness(); 
+            switchMusic('selection'); 
+        }
+        
+        // Handler per l'avvio della musica al primo clic sul documento.
+        function startMusicOnFirstClick() {
+            startSelectionMusicIfMuted();
+            // Rimuovi l'ascoltatore dopo il primo clic per evitare che riavvii l'audio ad ogni interazione.
+            document.removeEventListener('click', startMusicOnFirstClick);
         }
 
         // Inizializzazione all'avvio
@@ -848,10 +885,18 @@
             updatePlayerDisplay(1); 
             updatePlayerDisplay(2); 
             
-            setSelectionTarget(1); 
+            // Imposta il target iniziale e aggiorna la visualizzazione
+            currentSelectionTarget = 1;
+            updatePlayerSelectorDisplay(); 
 
             document.getElementById('fightButton').addEventListener('click', simulateMatch);
             checkFightReadiness(); 
+            
+            // Imposta il volume iniziale
+            document.getElementById('selection-music').volume = 0.4;
+            
+            // Aggiunge l'ascoltatore di eventi al primo clic su tutto il documento per avviare l'audio
+            document.addEventListener('click', startMusicOnFirstClick, { once: true });
         });
     </script>
 
